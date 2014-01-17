@@ -35,58 +35,56 @@ class ContentSyncController extends ezpRestMvcController
 			$result['collection']['description'] = '"request" is not valid XML';
 			return $this->result( $result, 500 );
 		}
-/*
-		if( isset( $this->request->get['cli'] ) ) {
-			$sourceFile = eZINI::instance( 'ljimport.ini' )->variable( 'General', 'SourceFile' );
-			if( $DOMDocument->save( $sourceFile ) === false ) {
-				throw new Exception( 'Could not save XML to file' );
+
+		if(
+			isset( $this->request->get['cli'] )
+			|| isset( $this->request->post['cli'] )
+		) {
+			$file = 'var/cache/' . uniqid( 'content_sync', true ) . '.xml';
+			if( $DOMDocument->save( $file ) === false ) {
+				$result['collection']['description'] = 'Could not save object data to file';
 			}
-			exec( '$(which php) extension/lj_import/bin/php/import.php > var/log/cli_import.log &' );
-		} else {
-			$moduleRepositories = eZModule::activeModuleRepositories( false );
-			eZModule::setGlobalPathList( $moduleRepositories );
+			chmod( $file, 0777 );
 
-			$configs   = array(
-				'ljImportConfigProductImage',
-				'ljImportConfigProductSKU',
-				'ljImportConfigPrice'
-			);
-			$timestamp = time();
-			$emailLogs = array();
-			foreach( $configs as $configClass ) {
-				$startTime = time();
+			$importCommand     = '$(which php) extension/content_sync/bin/php/import.php'
+				. ' --object_data_file="' . $file . '"'
+				. ' --creator_id=' . eZUser::currentUserID()
+				. ' >> var/log/content_sync_import.log 2>&1';
+			$removeFileCommand = 'rm -f ' . $file;
+			exec( '(' . $importCommand . ' && ' . $removeFileCommand . ') &' );
 
-				$importConfig = new $configClass;
-				$importConfig->setDOMDocument( $DOMDocument );
-				$importConfig->clearLogMessages();
-
-				$importController = new ljImportController( $importConfig );
-				$importController->log( 'Starting import for ' . get_class( $importConfig ), array( 'blue' ) );
-				$importController->run( $timestamp );
-
-				$executionTime = round( microtime( true ) - $startTime, 2 );
-
-				$importController->log( 'Import took ' . $executionTime . ' secs.' );
-				$importController->log( 'Created ' . $importController->counter['create'] . ' items, updated ' . $importController->counter['update'] . ' items, skiped ' . $importController->counter['skip'] . ' items.' );
-				$importController->log( 'Available items in feed: ' . count( $importController->config->dataList ) . '.' );
-
-				if( $importController->counter['create'] + $importController->counter['update'] > 0) {
-					$speed = ( $importController->counter['create'] + $importController->counter['update'] ) / $executionTime;
-					$speed = round( $speed, 2 );
-					$importController->log( 'Average speed: ' . $speed . ' items/sec.' );
-				}
-
-				$emailLogs[ str_replace( 'ljImportConfig', '', $configClass ) ] = $importConfig->getLogMessages();
-
-				unset( $importController );
-			}
-
-			$emailLogs = ljImportController::groupLogMessages( $emailLogs );
-			ljImportController::sendResultsEmail( $emailLogs );
+			$result['collection']['status']      = 'SUCCESS';
+			$result['collection']['description'] = 'Import started in background';
+			return $this->result( $result );
 		}
-*/
-		$result['collection']['status'] = 'SUCCESS';
+
+		try{
+			self::handleObjectData( $xml );
+		} catch( Exception $e ) {
+			$result['collection']['description'] = $e->getMessage();
+			return $this->result( $result, 500 );
+		}
+
+		$result['collection']['status']      = 'SUCCESS';
+		$result['collection']['description'] = 'Import is done';
 		return $this->result( $result );
+	}
+
+	public static function handleObjectData( $objectData ) {
+		$startTime = microtime( true );
+		//throw new Exception( 'test' );
+		sleep( 1 );
+
+		$log = new ContentSyncLogImport();
+		$log->setAttribute( 'object_id', 128 );
+		$log->setAttribute( 'object_version', rand( 3, 9 ) );
+		$log->setAttribute( 'object_data', $objectData );
+		$log->setAttribute( 'status', rand( 1, 3 ) );
+		//$log->setAttribute( 'error', 'Test error' );
+		$log->setAttribute( 'import_time', microtime( true ) - $startTime );
+		$log->store();
+
+		return true;
 	}
 
 	protected function result( $feed, $status = 200 ) {

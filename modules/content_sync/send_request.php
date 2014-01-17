@@ -20,7 +20,16 @@ $events = eZWorkflowEvent::fetchFilteredList( array( 'workflow_type_string' => '
 if( count( $events ) === 0 ) {
 	return $module->handleError( eZError::KERNEL_NOT_AVAILABLE, 'kernel' );
 }
-ContentSyncType::requestContentSync( $object, $version, $events[0] );
+
+$objectsToSync = ContentSyncType::getObjectsToSync( $object, $Params['Version'] );
+// No any sync request should be sent for current object
+if( count( $objectsToSync ) === 0 ) {
+	return $module->redirectToView( 'request_logs' );
+}
+
+foreach( $objectsToSync as $info ) {
+	ContentSyncType::requestContentSync( $info['object'], $info['version'], $events[0] );
+}
 
 return $module->redirectToView(
 	'request_logs',

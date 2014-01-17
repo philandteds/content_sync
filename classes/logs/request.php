@@ -66,7 +66,7 @@ class ContentSyncLogRequest extends ContentSyncLog
 					'required' => false
 				),
 				'response_time' => array(
-					'name'     => 'responseTime',
+					'name'     => 'ResponseTime',
 					'datatype' => 'float',
 					'default'  => 0,
 					'required' => false

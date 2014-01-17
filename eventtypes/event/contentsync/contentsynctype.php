@@ -18,7 +18,9 @@ class ContentSyncType extends eZWorkflowEventType
 		$this->setTriggerTypes(
 			array(
 				'content' => array(
-					'publish' => array( 'after' )
+					'publish'        => array( 'after' ),
+					'addlocation'    => array( 'after' ),
+					'removelocation' => array( 'after' )
 				)
 			)
 		);
@@ -26,20 +28,41 @@ class ContentSyncType extends eZWorkflowEventType
 
 	public function execute( $process, $event ) {
 		$parameters = $process->attribute( 'parameter_list' );
-		$object     = eZContentObject::fetch( $parameters['object_id'] );
+		$object     = null;
+
+		// content_removelocation operation has no object_id parameter
+		if( $parameters['module_function'] == 'removelocation' ) {
+			$object = eZContentObject::fetch( eZHTTPTool::instance()->postVariable( 'ContentObjectID' ) );
+		} else {
+			$object = eZContentObject::fetch( $parameters['object_id'] );
+		}
 
 		if( $object instanceof eZContentObject ) {
-			self::requestContentSync( $object, $object->attribute( 'current' ), $event );
+			$objectsToSync = self::getObjectsToSync( $object );
+			foreach( $objectsToSync as $info ) {
+				self::requestContentSync( $info['object'], $info['version'], $event );
+			}
 		}
 
 		return eZWorkflowType::STATUS_ACCEPTED;
 	}
 
-	public static function requestContentSync( $object, $version, $event ) {
-		$objectAttributes = '<r></r>';
+	public static function getObjectsToSync( eZContentObject $object, $version = null ) {
+		$syncHander = ContentSyncSerializeBase::get( $object );
+		if( $syncHander instanceof ContentSyncSerializeBase ) {
+			return $syncHander->getObjectsToSync( $object, $version );
+		}
+	}
 
-		$data = array(
-			'request' => $objectAttributes
+	public static function requestContentSync( eZContentObject $object, $version, $event ) {
+		$syncHander = ContentSyncSerializeBase::get( $object );
+		if( $syncHander instanceof ContentSyncSerializeBase === false ) {
+			return false;
+		}
+
+		$objectData = $syncHander->getObjectData( $object, $version );
+		$data       = array(
+			'request' => $objectData
 		);
 		if( (bool) $event->attribute( 'data_int1' ) ) {
 			$data['cli'] = 1;
@@ -52,7 +75,7 @@ class ContentSyncType extends eZWorkflowEventType
 		curl_setopt( $curl, CURLOPT_POST, true );
         curl_setopt( $curl, CURLOPT_POSTFIELDS, $data );
 		curl_setopt( $curl, CURLOPT_HEADER, true );
-		// Dsiable "HTTP/1.1 100 Continue" from response
+		// Avoid "HTTP/1.1 100 Continue" from response
 		curl_setopt( $curl, CURLOPT_HTTPHEADER, array( 'Expect:' ) );
 
 		$response = curl_exec( $curl );
@@ -63,7 +86,7 @@ class ContentSyncType extends eZWorkflowEventType
 		$log = new ContentSyncLogRequest();
 		$log->setAttribute( 'object_id', $object->attribute( 'id' ) );
 		$log->setAttribute( 'object_version', $version->attribute( 'version' ) );
-		$log->setAttribute( 'object_data', $objectAttributes );
+		$log->setAttribute( 'object_data', $objectData );
 		$log->setAttribute( 'url', $info['url'] );
 		$log->setAttribute( 'response_status', $info['http_code'] );
 		$log->setAttribute( 'response_headers', $header );
@@ -73,6 +96,10 @@ class ContentSyncType extends eZWorkflowEventType
 			$log->setAttribute( 'response_error', curl_error( $curl ) );
 		}
 		$log->store();
+	}
+
+	public static function getObjectData( eZContentObject $object, eZContentObjectVersion $version ) {
+
 	}
 
 	public function typeFunctionalAttributes() {

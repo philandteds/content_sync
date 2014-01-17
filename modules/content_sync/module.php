@@ -20,7 +20,6 @@ $ViewList = array(
 	'request_logs' => array(
 		'functions'        => array( 'logs' ),
 		'script'           => 'request_logs.php',
-		'params'           => array(),
 		'unordered_params' => array( 'NewCreated' ),
 	),
 	'request_details' => array(
@@ -30,8 +29,12 @@ $ViewList = array(
 	),
 	'import_logs' => array(
 		'functions' => array( 'logs' ),
-		'script'    => 'log/import.php',
-		'params'    => array()
+		'script'    => 'import_logs.php'
+	),
+	'import_details' => array(
+		'functions' => array( 'logs' ),
+		'script'    => 'import_details.php',
+		'params'    => array( 'ID' )
 	)
 );
 
