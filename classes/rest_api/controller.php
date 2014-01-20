@@ -72,15 +72,33 @@ class ContentSyncController extends ezpRestMvcController
 
 	public static function handleObjectData( $objectData ) {
 		$startTime = microtime( true );
-		//throw new Exception( 'test' );
-		sleep( 1 );
+		$error     = null;
+		$result    = array();
+
+		$import = ContentSyncImport::getInstance();
+		try{
+			$result = $import->process( $objectData );
+		} catch( Exception $e ) {
+			$error = $e->getMessage();
+		}
+
+		$status = isset( $result['status'] ) ? $result['status'] : ContentSyncLogImport::STATUS_SKIPPED;
 
 		$log = new ContentSyncLogImport();
-		$log->setAttribute( 'object_id', 128 );
-		$log->setAttribute( 'object_version', rand( 3, 9 ) );
 		$log->setAttribute( 'object_data', $objectData );
-		$log->setAttribute( 'status', rand( 1, 3 ) );
-		//$log->setAttribute( 'error', 'Test error' );
+		$log->setAttribute( 'status', $status );
+		if( isset( $result['object_id'] ) ) {
+			$log->setAttribute( 'object_id', $result['object_id'] );
+		}
+		if( isset( $result['object_version'] ) ) {
+			$log->setAttribute( 'object_version', $result['object_version'] );
+		}
+		if( isset( $result['result'] ) ) {
+			$log->setAttribute( 'result', $result['result'] );
+		}
+		if( $error !== null ) {
+			$log->setAttribute( 'error', $error );
+		}
 		$log->setAttribute( 'import_time', microtime( true ) - $startTime );
 		$log->store();
 
@@ -94,4 +112,6 @@ class ContentSyncController extends ezpRestMvcController
 		return $result;
 	}
 }
+
+
 

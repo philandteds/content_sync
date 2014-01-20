@@ -25,5 +25,6 @@ CREATE TABLE `content_sync_log_import` (
   `import_time` FLOAT(7,4) UNSIGNED NOT NULL DEFAULT 0,
   `date` int(11) UNSIGNED NOT NULL,
   `error` VARCHAR(255) DEFAULT NULL,
+  `result` TEXT DEFAULT NULL,
   PRIMARY KEY  (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;

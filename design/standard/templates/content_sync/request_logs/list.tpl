@@ -28,7 +28,7 @@
 					{foreach $logs as $log sequence array( 'bgdark', 'bglight' ) as $style }
 					<tr class="{$style}">
 						<td>{if $log.object}<a href="{$log.object.main_node.url_alias|ezurl( 'no' )}" target="_blank">{$log.object.name|wash}</a>{else}{'is removed'|i18n( 'extension/content_sync' )}{/if}</td>
-						<td>{if $log.object}<a href="{concat( '/content/versionview/', $log.object_id, '/', $log.object_version, '/', $log.version.initial_language.locale )|ezurl( 'no' )}" target="_blank">{$log.object_version} ({$log.version.initial_language.locale})</a>{else}{$log.object_version}{/if}</td>
+						<td>{if $log.version}<a href="{concat( '/content/versionview/', $log.object_id, '/', $log.object_version, '/', $log.version.initial_language.locale )|ezurl( 'no' )}" target="_blank">{$log.object_version} ({$log.version.initial_language.locale})</a>{else}{$log.object_version}{/if}</td>
 						<td>{$log.date|datetime( 'custom', '%d.%m.%Y %H:%i:%s' )}</td>
 						<td>{$log.response_status}</td>
 						<td>{$log.response_time}</td>

@@ -9,7 +9,7 @@
 abstract class ContentSyncSerializeBase
 {
 	protected static $instances	 = array();
-	protected static $classIdentifier = null;
+	public static $classIdentifier = null;
 
 	/**
 	 * Recieves the content object and returns it`serializer

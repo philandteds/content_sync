@@ -33,7 +33,11 @@
 			</div>
 			<div class="block">
 				<label>{'Status'|i18n( 'extension/content_sync' )}:</label>
-				{$log.status_description}</a
+				{$log.status_description}
+			</div>
+			<div class="block">
+				<label>{'Result'|i18n( 'extension/content_sync' )}:</label>
+				{$log.result}
 			</div>
 			<div class="block">
 				<label>{'Error'|i18n( 'extension/content_sync' )}:</label>

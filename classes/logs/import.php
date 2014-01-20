@@ -63,6 +63,12 @@ class ContentSyncLogImport extends ContentSyncLog
 					'default'  => null,
 					'required' => false
 				),
+				'result' => array(
+					'name'     => 'Result',
+					'datatype' => 'string',
+					'default'  => null,
+					'required' => false
+				),
 				'date' => array(
 					'name'     => 'Date',
 					'datatype' => 'integer',

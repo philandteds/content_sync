@@ -24,7 +24,7 @@
 					<tr class="{$style}">
 						<td>{if $log.user}<a href="{$log.user.main_node.url_alias|ezurl( 'no' )}" target="_blank">{$log.user.name|wash}</a>{else}{'doesn`t exist'|i18n( 'extension/content_sync' )}{/if}</td>
 						<td>{if $log.object}<a href="{$log.object.main_node.url_alias|ezurl( 'no' )}" target="_blank">{$log.object.name|wash}</a>{else}{'doesn`t exist'|i18n( 'extension/content_sync' )}{/if}</td>
-						<td>{if $log.object}<a href="{concat( '/content/versionview/', $log.object_id, '/', $log.object_version, '/', $log.version.initial_language.locale )|ezurl( 'no' )}" target="_blank">{$log.object_version} ({$log.version.initial_language.locale})</a>{else}{$log.object_version}{/if}</td>
+						<td>{if $log.version}<a href="{concat( '/content/versionview/', $log.object_id, '/', $log.object_version, '/', $log.version.initial_language.locale )|ezurl( 'no' )}" target="_blank">{$log.object_version} ({$log.version.initial_language.locale})</a>{else}{$log.object_version}{/if}</td>
 						<td>{$log.date|datetime( 'custom', '%d.%m.%Y %H:%i:%s' )}</td>
 						<td>{$log.status_description}</td>
 						<td>{$log.import_time}</td>

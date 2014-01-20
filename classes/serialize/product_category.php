@@ -8,7 +8,7 @@
 
 class ContentSyncSerializeProductCategory extends ContentSyncSerializeBase
 {
-	protected static $classIdentifier = 'product_category';
+	public static $classIdentifier = 'product_category';
 
 	public function getObjectData( eZContentObject $object, eZContentObjectVersion $version ) {
 		$dataMap    = $version->attribute( 'data_map' );
@@ -22,7 +22,7 @@ class ContentSyncSerializeProductCategory extends ContentSyncSerializeBase
 
 		// General object data
 		$request = $doc->createElement( 'object' );
-		$request->setAttribute( 'unqique_id', $identifier );
+		$request->setAttribute( 'unique_id', $identifier );
 		$request->setAttribute( 'language', $language );
 		$request->setAttribute( 'type', self::$classIdentifier );
 		$doc->appendChild( $request );
@@ -37,7 +37,7 @@ class ContentSyncSerializeProductCategory extends ContentSyncSerializeBase
 			} else {
 				$lDataMap = $parent->attribute( 'data_map' );
 				$location->setAttribute( 'type', self::$classIdentifier );
-				$location->setAttribute( 'unqique_id', $lDataMap['identifier']->attribute( 'content' ) );
+				$location->setAttribute( 'unique_id', $lDataMap['identifier']->attribute( 'content' ) );
 			}
 
 			$locations->appendChild( $location );
@@ -61,20 +61,97 @@ class ContentSyncSerializeProductCategory extends ContentSyncSerializeBase
 		$attributes = $doc->createElement( 'attributes' );
 		foreach( $syncAttrs as $attrIdentifier ) {
 			$value = null;
-			$cdata = false;
-
 			if( isset( $dataMap[ $attrIdentifier ] ) ) {
 				$value = $dataMap[ $attrIdentifier ]->toString();
 			}
 
-			$attribute = $doc->createElement( 'attribute' );
-			$attribute->appendChild( $doc->createCDATASection( $value ) );
-			$attribute->setAttribute( 'identifier', $attrIdentifier );
-
-			$attributes->appendChild( $attribute );
+			$attributes->appendChild( self::createAttributeNode( $doc, $attrIdentifier, $value ) );
 		}
+
+		// Image
+		$image = self::getImageNode( $doc, $dataMap['image']->attribute( 'content' ) );
+		$attributes->appendChild( self::createAttributeNode( $doc, 'image', $image ) );
+
 		$request->appendChild( $attributes );
 
 		return $doc->saveXML();
+	}
+
+	public static function getImageNode( DOMDocument $doc, eZContentObject $image = null, $versionNumber = null ) {
+		$node = $doc->createElement( 'image' );
+		if( $image instanceof eZContentObject === false ) {
+			return $node;
+		}
+
+		if( $image->attribute( 'class_identifier' ) != ContentSyncSerializeImage::$classIdentifier ) {
+			return $node;
+		}
+
+		if( $versionNumber === null ) {
+			$dataMap = $image->attribute( 'data_map' );
+		} else {
+			$version = $image->version( $versionNumber );
+			if( $version instanceof eZContentObjectVersion === false ) {
+				return $node;
+			}
+			$dataMap = $version->attribute( 'data_map' );
+		}
+		$attr = self::createAttributeNode( $doc, 'name', $dataMap['name']->toString() );
+		$node->appendChild( $attr );
+		$attr = self::createAttributeNode( $doc, 'caption', $dataMap['caption']->toString() );
+		$node->appendChild( $attr );
+
+		$img = $dataMap['image']->attribute( 'content' );
+		$node->appendChild( self::getImageFileNode( $doc, $img ) );
+
+		return $node;
+	}
+
+	public static function getImageFileNode( DOMDocument $doc, eZImageAliasHandler $img ) {
+		$node = $doc->createElement( 'image_file' );
+		if( $img->attribute( 'is_valid' ) === false ) {
+			return $node;
+		}
+
+		$original = $img->attribute( 'original' );
+		$file     = $original['url'];
+		// Fetch image if file storage is clustered
+		eZClusterFileHandler::instance( $file )->fetch();
+		if(
+			file_exists( $file ) === false
+			|| (int) @filesize( $file ) === 0
+		) {
+			return $node;
+		}
+
+		$attr = self::createAttributeNode( $doc, 'original_filename', $img->attribute( 'original_filename' ) );
+		$node->appendChild( $attr );
+
+		$attr = self::createAttributeNode( $doc, 'file_hash', hash_file( 'md5', $file ) );
+		$node->appendChild( $attr );
+
+		$fileURI = $file;
+		eZURI::transformURI( $fileURI, true, 'full' );
+		$attr = self::createAttributeNode( $doc, 'file', $fileURI );
+		$node->appendChild( $attr );
+
+		return $node;
+	}
+
+	public static function createAttributeNode( DOMDocument $doc, $identifier, $value ) {
+		$attr = $doc->createElement( 'attribute' );
+		if(
+			$value instanceof DOMElement === false
+			&& $value !== NULL
+		) {
+			$value = $doc->createCDATASection( $value );
+		}
+
+		if( $value !== null ) {
+			$attr->appendChild( $value );
+		}
+
+		$attr->setAttribute( 'identifier', $identifier );
+		return $attr;
 	}
 }
