@@ -51,8 +51,6 @@ class ContentSyncSerializeProductCategory extends ContentSyncSerializeBase
 			'description',
 			'category_message',
 			'identifier',
-			'seo_title',
-			'seo_description',
 			'tags',
 			'xrow_prod_desc',
 			'show_in_main_menu',
@@ -124,15 +122,18 @@ class ContentSyncSerializeProductCategory extends ContentSyncSerializeBase
 			return $node;
 		}
 
-		$attr = self::createAttributeNode( $doc, 'original_filename', $img->attribute( 'original_filename' ) );
+		$attr = $doc->createElement( 'original_filename' );
+		$attr->appendChild( $doc->createCDATASection( $img->attribute( 'original_filename' ) ) );
 		$node->appendChild( $attr );
 
-		$attr = self::createAttributeNode( $doc, 'file_hash', hash_file( 'md5', $file ) );
+		$attr = $doc->createElement( 'file_hash' );
+		$attr->appendChild( $doc->createCDATASection( hash_file( 'md5', $file ) ) );
 		$node->appendChild( $attr );
 
 		$fileURI = $file;
 		eZURI::transformURI( $fileURI, true, 'full' );
-		$attr = self::createAttributeNode( $doc, 'file', $fileURI );
+		$attr = $doc->createElement( 'file' );
+		$attr->appendChild( $doc->createCDATASection( $fileURI ) );
 		$node->appendChild( $attr );
 
 		return $node;

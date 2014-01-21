@@ -52,15 +52,16 @@ abstract class ContentSyncImportHandlerBase
 	}
 
 	/**
-	 * @param array[SimpleXMLElement]
+	 * @param array[SimpleXMLElement] $attributes
+	 * @param eZContentObjectVersion $existingVerion
 	 * @return array
 	 */
-	public function processAttributes( array $attributes ) {
+	public function processAttributes( array $attributes, eZContentObjectVersion $existingVerion = null ) {
 		return array();
 	}
 
 	/**
-	 * @param array[SimpleXMLElement]
+	 * @param array[SimpleXMLElement] $locations
 	 * @return array[eZContentObjectTreeNode]
 	 */
 	public function processLocations( array $locations ) {

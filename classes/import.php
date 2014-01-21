@@ -9,6 +9,7 @@
 class ContentSyncImport
 {
 	protected static $instance = null;
+	protected static $logMessages = array();
 
 	protected $handler     = null;
 	protected $DOMDocument = null;
@@ -58,13 +59,15 @@ class ContentSyncImport
 			self::$instance = new $class;
 		}
 
+		self::$logMessages = array();
+
 		return self::$instance;
 	}
 
 	/**
 	 * Processes XML object data and stores data in objectData variable
 	 * @param string $xml
-	 * @return void
+	 * @return array
 	 */
 	public function process( $xml ) {
 		$this->DOMDocument = new DOMDocument();
@@ -78,6 +81,10 @@ class ContentSyncImport
 		$this->processAttributes();
 		$this->processLocations();
 
+		// upadte or create object
+		return array(
+			'result' => self::getResultMessage()
+		);
 	}
 
 	private function processObjectData( ) {
@@ -131,7 +138,8 @@ class ContentSyncImport
 		$xml        = simplexml_import_dom( $this->DOMDocument );
 		$attributes = $xml->xpath( '/object/attributes/attribute' );
 
-		$this->objectData['attributes'] = $this->handler->processAttributes( $attributes );
+		$existingVerion = $this->getExisitingObjectVersion();
+		$this->objectData['attributes'] = $this->handler->processAttributes( $attributes, $existingVerion );
 
 		unset( $xml );
 	}
@@ -140,8 +148,44 @@ class ContentSyncImport
 		$xml       = simplexml_import_dom( $this->DOMDocument );
 		$locations = $xml->xpath( '/object/locations/location' );
 
-		$this->objectData['locations'] = $this->handler->processLocations( $locations );
+		$this->objectData['locations'] = $this->handler->processLocations( $locations, $this->objectData );
 
 		unset( $xml );
+	}
+
+	private function getExisitingObjectVersion() {
+		$version = null;
+		$object  = $this->handler->fetchObject( $this->objectData['unique_id'] );
+		if( $object instanceof eZContentObject === false ) {
+			return $version;
+		}
+
+		$language = eZContentLanguage::fetchByLocale( $this->objectData['language'] );
+		$versions = eZPersistentObject::fetchObjectList(
+			eZContentObjectVersion::definition(),
+			null,
+			array(
+				'initial_language_id' => $language->attribute( 'id' ),
+				'contentobject_id'    => $object->attribute( 'id' )
+			),
+			array(
+				'version' => 'desc'
+			)
+		);
+		if( count( $versions ) > 0 ) {
+			return $versions[0];
+		}
+
+		return null;
+	}
+
+	public static function addLogtMessage( $message ) {
+		self::$logMessages[] = $message;
+	}
+
+	public static function getResultMessage() {
+		$message = implode( "\n", self::$logMessages );
+		self::$logMessages = array();
+		return $message;
 	}
 }
