@@ -49,13 +49,19 @@ class ContentSyncImportHandlereRPBase extends ContentSyncImportHandlerBase
 			}
 		}
 
+		$existingParentNodeIDs = array();
 		foreach( $nodes as $key => $node ) {
-			if( $node instanceof eZContentObjectTreeNode === false ) {
+			if(
+				$node instanceof eZContentObjectTreeNode === false
+				|| in_array( $existingParentNodeIDs, $node->attribute( 'node_id' ) )
+			) {
 				unset( $nodes[ $key ] );
 			}
+
+			$existingParentNodeIDs[] = $node->attribute( 'node_id' );
 		}
 
-		return $nodes;
+		return array_values( $nodes );
 	}
 
 	protected function processSimpleAttributes( array $attributes ) {

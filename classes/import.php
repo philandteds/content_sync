@@ -82,9 +82,7 @@ class ContentSyncImport
 		$this->fetchImportHandler();
 		$this->processAttributes();
 		$this->processLocations();
-
-		// upadte or create object
-		return array();
+		return $this->import();
 	}
 
 	private function processObjectData( ) {
@@ -180,6 +178,11 @@ class ContentSyncImport
 		}
 
 		return null;
+	}
+
+	private function import() {
+		$existingVersion = $this->getExisitingObjectVersion();
+		return $this->handler->import( $this->objectData, $existingVersion );
 	}
 
 	public static function addLogtMessage( $message ) {

@@ -76,4 +76,18 @@ abstract class ContentSyncImportHandlerBase
 	public function fetchObject( $uniqueID ) {
 		return null;
 	}
+
+	/**
+	 * Creates or updates content object
+	 * @param array $objectData
+	 * @param eZContentObjectVersion $existingVersion
+	 * @return array
+	 */
+	public function import( array $objectData, eZContentObjectVersion $existingVersion = null ) {
+		return array(
+			'object_id'      => null,
+			'object_version' => null,
+			'status'         => ContentSyncLogImport::STATUS_SKIPPED
+		);
+	}
 }

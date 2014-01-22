@@ -21,7 +21,7 @@
 			</div>
 			<div class="block">
 				<label>{'Object'|i18n( 'extension/content_sync' )}:</label>
-				{if $log.object}<a href="{$log.object.main_node.url_alias|ezurl( 'no' )}" target="_blank">{$log.object.name|wash}</a>{else}{'doesn`t exist'|i18n( 'extension/content_sync' )}{/if}
+				{if $log.object}<a href="{$log.object.main_node.url_alias|ezurl( 'no' )}" target="_blank">{if $log.object.name}{$log.object.name|wash}{else}{'empty name'|i18n( 'extension/content_sync' )}{/if}</a>{else}{'doesn`t exist'|i18n( 'extension/content_sync' )}{/if}
 			</div>
 			<div class="block">
 				<label>{'Version'|i18n( 'extension/content_sync' )}:</label>
