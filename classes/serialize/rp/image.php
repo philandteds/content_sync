@@ -6,7 +6,7 @@
  * @date    18 Jan 2014
  **/
 
-class ContentSyncSerializeImage extends ContentSyncSerializeBase
+class ContentSyncSerializeImage extends ContentSyncSerializePTBase
 {
 	public static $classIdentifier = 'image';
 

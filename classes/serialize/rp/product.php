@@ -6,7 +6,7 @@
  * @date    17 Jan 2014
  **/
 
-class ContentSyncSerializeXrowProduct extends ContentSyncSerializeBase
+class ContentSyncSerializeXrowProduct extends ContentSyncSerializePTBase
 {
 	public static $classIdentifier = 'xrow_product';
 
@@ -33,10 +33,10 @@ class ContentSyncSerializeXrowProduct extends ContentSyncSerializeBase
 			$parent   = $node->attribute( 'parent' );
 			if( $parent->attribute( 'class_identifier' ) !== ContentSyncSerializeProductCategory::$classIdentifier ) {
 				// Restricted products folder
-				$location = ContentSyncSerializeProductCategory::createLocationNode( $doc, 'root' );
+				$location = self::createLocationNode( $doc, 'root' );
 			} else {
 				$lDataMap = $parent->attribute( 'data_map' );
-				$location = ContentSyncSerializeProductCategory::createLocationNode(
+				$location = self::createLocationNode(
 					$doc,
 					ContentSyncSerializeProductCategory::$classIdentifier,
 					$lDataMap['identifier']->attribute( 'content' )
@@ -48,7 +48,7 @@ class ContentSyncSerializeXrowProduct extends ContentSyncSerializeBase
 		// Additional categoreis
 		$parentIdentifiers = explode( ',', trim( $dataMap['parent_category_identifiers']->toString() ) );
 		foreach( $parentIdentifiers as $parentIdentifier ) {
-			$location = ContentSyncSerializeProductCategory::createLocationNode(
+			$location = self::createLocationNode(
 				$doc,
 				ContentSyncSerializeProductCategory::$classIdentifier,
 				trim( $parentIdentifier )
@@ -81,24 +81,24 @@ class ContentSyncSerializeXrowProduct extends ContentSyncSerializeBase
 				$value = $dataMap[ $attrIdentifier ]->toString();
 			}
 
-			$attributes->appendChild( ContentSyncSerializeProductCategory::createAttributeNode( $doc, $attrIdentifier, $value ) );
+			$attributes->appendChild( self::createAttributeNode( $doc, $attrIdentifier, $value ) );
 		}
 
 		// Logo
-		$image = ContentSyncSerializeProductCategory::getImageFileNode( $doc, $dataMap['xrow_logo']->attribute( 'content' ) );
-		$attributes->appendChild( ContentSyncSerializeProductCategory::createAttributeNode( $doc, 'xrow_logo', $image ) );
+		$image = self::getImageFileNode( $doc, $dataMap['xrow_logo']->attribute( 'content' ) );
+		$attributes->appendChild( self::createAttributeNode( $doc, 'xrow_logo', $image ) );
 		// Shop homepage image
-		$image = ContentSyncSerializeProductCategory::getImageNode( $doc, $dataMap['image']->attribute( 'content' ) );
-		$attributes->appendChild( ContentSyncSerializeProductCategory::createAttributeNode( $doc, 'image', $image ) );
+		$image = self::getImageNode( $doc, $dataMap['image']->attribute( 'content' ) );
+		$attributes->appendChild( self::createAttributeNode( $doc, 'image', $image ) );
 		// Images
-		$images        = ContentSyncSerializeProductCategory::createAttributeNode( $doc, 'images', null );
+		$images        = self::createAttributeNode( $doc, 'images', null );
 		$relatedImages = $dataMap['images']->attribute( 'content' );
 		foreach( $relatedImages['relation_list'] as $relation ) {
 			$image = eZContentObject::fetch( $relation['contentobject_id'] );
 			if( $image instanceof eZContentObject === false ) {
 				continue;
 			}
-			$images->appendChild( ContentSyncSerializeProductCategory::getImageNode( $doc, $image, $relation['contentobject_version'] ) );
+			$images->appendChild( self::getImageNode( $doc, $image, $relation['contentobject_version'] ) );
 		}
 		$attributes->appendChild( $images );
 
@@ -132,7 +132,7 @@ class ContentSyncSerializeXrowProduct extends ContentSyncSerializeBase
 
 	protected static function getRelatedProductsNode( $doc, eZContentObjectAttribute $attribute ) {
 		$identifier       = $attribute->attribute( 'contentclass_attribute_identifier' );
-		$optionalProducts = ContentSyncSerializeProductCategory::createAttributeNode( $doc, $identifier, null );
+		$optionalProducts = self::createAttributeNode( $doc, $identifier, null );
 		$relatedProducts  = $attribute->attribute( 'content' );
 		foreach( $relatedProducts['relation_list'] as $relation ) {
 			$relatedProduct = eZContentObject::fetch( $relation['contentobject_id'] );
@@ -153,7 +153,7 @@ class ContentSyncSerializeXrowProduct extends ContentSyncSerializeBase
 
 	protected static function getColourMapNode( $doc, eZContentObjectAttribute $attribute ) {
 		$identifier = $attribute->attribute( 'contentclass_attribute_identifier' );
-		$colourMap  = ContentSyncSerializeProductCategory::createAttributeNode( $doc, $identifier, null );
+		$colourMap  = self::createAttributeNode( $doc, $identifier, null );
 		$colours    = $attribute->attribute( 'content' );
 		foreach( $colours['main']['result'] as $SKUImage ) {
 			$node  = $doc->createElement( 'sku_image' );
@@ -166,7 +166,7 @@ class ContentSyncSerializeXrowProduct extends ContentSyncSerializeBase
 				if( $image instanceof eZContentObject === false ) {
 					continue;
 				}
-				$imageNode = ContentSyncSerializeProductCategory::getImageNode( $doc, $image );
+				$imageNode = self::getImageNode( $doc, $image );
 				$node->appendChild( $imageNode );
 			}
 			$colourMap->appendChild( $node );
