@@ -27,12 +27,17 @@ class ContentSyncSerializeProductCategory extends ContentSyncSerializeBase
 		$request->setAttribute( 'type', self::$classIdentifier );
 		$doc->appendChild( $request );
 
+				$parentIdentifiers = explode( ',', $dataMap['parent_category_identifiers']->toString() );
+
 		// Locations
-		$locations        = $doc->createElement( 'locations' );
-		$parentIdentifier = $dataMap['parent_category_identifier']->toString();
-		if( strlen( $parentIdentifier ) !== 0 ) {
-			$location = self::createLocationNode( $doc, self::$classIdentifier, $parentIdentifier );
-			$locations->appendChild( $location );
+		$locations         = $doc->createElement( 'locations' );
+		$parentIdentifiers = trim( $dataMap['parent_category_identifiers']->toString() );
+		if( strlen( $parentIdentifiers ) !== 0 ) {
+			$parentIdentifiers = explode( ',', $parentIdentifiers );
+			foreach( $parentIdentifiers as $parentIdentifier ) {
+				$location = self::createLocationNode( $doc, self::$classIdentifier, trim( $parentIdentifier ) );
+				$locations->appendChild( $location );
+			}
 		} else {
 			foreach( $nodes as $node ) {
 				$parent   = $node->attribute( 'parent' );

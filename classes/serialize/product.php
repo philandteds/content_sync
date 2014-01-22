@@ -28,20 +28,34 @@ class ContentSyncSerializeXrowProduct extends ContentSyncSerializeBase
 
 		// Locations
 		$locations = $doc->createElement( 'locations' );
+		// Parent nodes
 		foreach( $nodes as $node ) {
 			$parent   = $node->attribute( 'parent' );
-			$location = $doc->createElement( 'location' );
 			if( $parent->attribute( 'class_identifier' ) !== ContentSyncSerializeProductCategory::$classIdentifier ) {
 				// Restricted products folder
-				$location->setAttribute( 'type', 'root' );
+				$location = ContentSyncSerializeProductCategory::createLocationNode( $doc, 'root' );
 			} else {
 				$lDataMap = $parent->attribute( 'data_map' );
-				$location->setAttribute( 'type', ContentSyncSerializeProductCategory::$classIdentifier );
-				$location->setAttribute( 'unique_id', $lDataMap['identifier']->attribute( 'content' ) );
+				$location = ContentSyncSerializeProductCategory::createLocationNode(
+					$doc,
+					ContentSyncSerializeProductCategory::$classIdentifier,
+					$lDataMap['identifier']->attribute( 'content' )
+				);
 			}
 
 			$locations->appendChild( $location );
 		}
+		// Additional categoreis
+		$parentIdentifiers = explode( ',', trim( $dataMap['parent_category_identifiers']->toString() ) );
+		foreach( $parentIdentifiers as $parentIdentifier ) {
+			$location = ContentSyncSerializeProductCategory::createLocationNode(
+				$doc,
+				ContentSyncSerializeProductCategory::$classIdentifier,
+				trim( $parentIdentifier )
+			);
+			$locations->appendChild( $location );
+		}
+
 		$request->appendChild( $locations );
 
 		// Content attributes
@@ -55,7 +69,10 @@ class ContentSyncSerializeXrowProduct extends ContentSyncSerializeBase
 			'description',
 			'video',
 			'hide_product',
-			'tags'
+			'tags',
+			'brand',
+			'display_in_websites',
+			'parent_category_identifiers'
 		);
 		$attributes = $doc->createElement( 'attributes' );
 		foreach( $syncAttrs as $attrIdentifier ) {
