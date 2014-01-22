@@ -99,4 +99,18 @@ class ContentSyncSerializePTBase extends ContentSyncSerializeBase
 		$attr->setAttribute( 'identifier', $identifier );
 		return $attr;
 	}
+
+	public static function fetchObjectDataMap( eZContentObject $object, eZContentObjectVersion $version ) {
+		$dataMap = array();
+		$data    = $version->fetchAttributes(
+			$version->attribute( 'version' ),
+			$object->attribute( 'id' ),
+			$version->initialLanguageCode()
+		);
+		foreach( $data as $item ) {
+			$dataMap[ $item->contentClassAttributeIdentifier() ] = $item;
+		}
+
+		return $dataMap;
+	}
 }

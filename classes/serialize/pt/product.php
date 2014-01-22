@@ -11,9 +11,9 @@ class ContentSyncSerializeXrowProduct extends ContentSyncSerializePTBase
 	public static $classIdentifier = 'xrow_product';
 
 	public function getObjectData( eZContentObject $object, eZContentObjectVersion $version ) {
-		$dataMap    = $version->attribute( 'data_map' );
-		$nodes      = $object->assignedNodes();
-		$language   = $version->attribute( 'initial_language' )->attribute( 'locale' );
+		$dataMap  = self::fetchObjectDataMap( $object, $version );
+		$nodes    = $object->assignedNodes();
+		$language = $version->attribute( 'initial_language' )->attribute( 'locale' );
 
 		$doc = new DOMDocument( '1.0', 'UTF-8' );
 		$doc->formatOutput       = true;
