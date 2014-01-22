@@ -10,6 +10,8 @@ class ContentSyncType extends eZWorkflowEventType
 {
 	const TYPE_ID = 'contentsync';
 
+	protected static $isEnabled = true;
+
 	public function __construct() {
 		$this->eZWorkflowEventType(
 			self::TYPE_ID,
@@ -27,6 +29,10 @@ class ContentSyncType extends eZWorkflowEventType
 	}
 
 	public function execute( $process, $event ) {
+		if( self::isEnabled() === false ) {
+			return eZWorkflowType::STATUS_ACCEPTED;
+		}
+
 		$parameters = $process->attribute( 'parameter_list' );
 		$object     = null;
 
@@ -126,6 +132,18 @@ class ContentSyncType extends eZWorkflowEventType
 		}
 
 		$event->setAttribute( 'data_int1', (int) $http->hasPostVariable( 'cli_mode' ) );
+	}
+
+	public static function isEnabled() {
+		return self::$isEnabled == true;
+	}
+
+	public static function disable() {
+		self::$isEnabled = false;
+	}
+
+	public static function enabled() {
+		self::$isEnabled = true;
 	}
 }
 

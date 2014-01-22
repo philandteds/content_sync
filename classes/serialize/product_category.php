@@ -28,19 +28,23 @@ class ContentSyncSerializeProductCategory extends ContentSyncSerializeBase
 		$doc->appendChild( $request );
 
 		// Locations
-		$locations = $doc->createElement( 'locations' );
-		foreach( $nodes as $node ) {
-			$parent   = $node->attribute( 'parent' );
-			$location = $doc->createElement( 'location' );
-			if( $parent->attribute( 'class_identifier' ) !== self::$classIdentifier ) {
-				$location->setAttribute( 'type', 'root' );
-			} else {
-				$lDataMap = $parent->attribute( 'data_map' );
-				$location->setAttribute( 'type', self::$classIdentifier );
-				$location->setAttribute( 'unique_id', $lDataMap['identifier']->attribute( 'content' ) );
-			}
-
+		$locations        = $doc->createElement( 'locations' );
+		$parentIdentifier = $dataMap['parent_category_identifier']->toString();
+		if( strlen( $parentIdentifier ) !== 0 ) {
+			$location = self::createLocationNode( $doc, self::$classIdentifier, $parentIdentifier );
 			$locations->appendChild( $location );
+		} else {
+			foreach( $nodes as $node ) {
+				$parent   = $node->attribute( 'parent' );
+				if( $parent->attribute( 'class_identifier' ) !== self::$classIdentifier ) {
+					$location = self::createLocationNode( $doc, 'root' );
+				} else {
+					$lDataMap = $parent->attribute( 'data_map' );
+					$location = self::createLocationNode( $doc, self::$classIdentifier, $lDataMap['identifier']->attribute( 'content' ) );
+				}
+
+				$locations->appendChild( $location );
+			}
 		}
 		$request->appendChild( $locations );
 
@@ -54,7 +58,8 @@ class ContentSyncSerializeProductCategory extends ContentSyncSerializeBase
 			'tags',
 			'xrow_prod_desc',
 			'show_in_main_menu',
-			'show_in_products_menu'
+			'show_in_products_menu',
+			'parent_category_identifier'
 		);
 		$attributes = $doc->createElement( 'attributes' );
 		foreach( $syncAttrs as $attrIdentifier ) {
@@ -73,6 +78,15 @@ class ContentSyncSerializeProductCategory extends ContentSyncSerializeBase
 		$request->appendChild( $attributes );
 
 		return $doc->saveXML();
+	}
+
+	public static function createLocationNode( $doc, $type, $uniqueID = null ) {
+		$location = $doc->createElement( 'location' );
+		$location->setAttribute( 'type', $type );
+		if( $uniqueID !== null ) {
+			$location->setAttribute( 'unique_id', $uniqueID );
+		}
+		return $location;
 	}
 
 	public static function getImageNode( DOMDocument $doc, eZContentObject $image = null, $versionNumber = null ) {

@@ -75,6 +75,8 @@ class ContentSyncImport
 			throw new Exception( 'Invalid object data XML' );
 		}
 
+		ContentSyncType::disable();
+
 		$this->processObjectData();
 		$this->validateObjectData();
 		$this->fetchImportHandler();

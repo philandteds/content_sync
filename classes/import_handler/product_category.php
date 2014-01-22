@@ -61,7 +61,6 @@ class ContentSyncImportHandlerProductCategory extends ContentSyncImportHandlerBa
 	public function processAttributes( array $attributes, eZContentObjectVersion $existingVerion = null ) {
 		$return = $this->processSimpleAttributes( $attributes );
 
-
 		// Image attriubte
 		foreach( $attributes as $attribute ) {
 			if( (string) $attribute['identifier'] === 'image' ) {
@@ -123,7 +122,7 @@ class ContentSyncImportHandlerProductCategory extends ContentSyncImportHandlerBa
 			}
 
 			$hash = (string) $image->image_file->file_hash;
-			if( isset( $imageHashes[ $hash ] ) && false ) {
+			if( isset( $imageHashes[ $hash ] ) ) {
 				$return[] = $imageHashes[ $hash ];
 			} else {
 				$newImage = self::publishNewImage( $imagesContainer, $image );
