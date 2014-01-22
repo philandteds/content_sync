@@ -93,9 +93,8 @@ class ContentSyncController extends ezpRestMvcController
 		if( isset( $result['object_version'] ) ) {
 			$log->setAttribute( 'object_version', $result['object_version'] );
 		}
-		if( isset( $result['result'] ) ) {
-			$log->setAttribute( 'result', $result['result'] );
-		}
+		$log->setAttribute( 'result', ContentSyncImport::getResultMessage() );
+
 		if( $error !== null ) {
 			$log->setAttribute( 'error', $error );
 		}

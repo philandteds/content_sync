@@ -84,9 +84,7 @@ class ContentSyncImport
 		$this->processLocations();
 
 		// upadte or create object
-		return array(
-			'result' => self::getResultMessage()
-		);
+		return array();
 	}
 
 	private function processObjectData( ) {
@@ -151,6 +149,9 @@ class ContentSyncImport
 		$locations = $xml->xpath( '/object/locations/location' );
 
 		$this->objectData['locations'] = $this->handler->processLocations( $locations, $this->objectData );
+		if( count( $this->objectData['locations'] ) === 0 ) {
+			throw new Exception( 'Unable to fetch at least one parent node' );
+		}
 
 		unset( $xml );
 	}

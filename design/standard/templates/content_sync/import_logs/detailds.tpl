@@ -37,7 +37,7 @@
 			</div>
 			<div class="block">
 				<label>{'Result'|i18n( 'extension/content_sync' )}:</label>
-				{$log.result}
+				{$log.result|nl2br}
 			</div>
 			<div class="block">
 				<label>{'Error'|i18n( 'extension/content_sync' )}:</label>
