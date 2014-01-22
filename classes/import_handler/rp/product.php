@@ -6,13 +6,9 @@
  * @date    20 Jan 2014
  **/
 
-class ContentSyncImportHandlerXrowProduct extends ContentSyncImportHandlerBase
+class ContentSyncImportHandlerXrowProduct extends ContentSyncImportHandlereRPBase
 {
 	public function processAttributes( array $attributes, eZContentObjectVersion $existingVerion = null ) {
-		return array();
-	}
-
-	public function processLocations( array $locations ) {
 		return array();
 	}
 }

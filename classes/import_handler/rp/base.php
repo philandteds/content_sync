@@ -1,50 +1,50 @@
 <?php
 /**
  * @package ContentSync
- * @class   ContentSyncImportHandlerProductCategory
+ * @class   ContentSyncImportHandlereRPBase
  * @author  Serhey Dolgushev <dolgushev.serhey@gmail.com>
  * @date    20 Jan 2014
  **/
 
-class ContentSyncImportHandlerProductCategory extends ContentSyncImportHandlerBase
+class ContentSyncImportHandlereRPBase extends ContentSyncImportHandlerBase
 {
+	protected static $rootNodeURLPath       = null;
+	protected static $imageContainerURLPath = null;
+	protected static $simpleAttributes      = array();
+
 	public function fetchObject( $uniqueID ) {
 		$node = $this->fetchNode( $uniqueID );
 		return $node instanceof eZContentObjectTreeNode ? $node->attribute( 'object' ) : null;
 	}
 
 	public function fetchNode( $uniqueID ) {
-		$class       = ContentSyncSerializeProductCategory::$classIdentifier;
-		$fetchParams = array(
-			'Depth'            => false,
-			'Limitation'       => array(),
-			'LoadDataMap'      => false,
-			'AsObject'         => true,
-			'IgnoreVisibility' => true,
-			'MainNodeOnly'     => true,
-			'ClassFilterType'  => 'include',
-			'ClassFilterArray' => array( $class ),
-			'AttributeFilter'  => array(
-				array( $class . '/identifier', '=', $uniqueID )
-			)
-		);
-
-		$nodes = eZContentObjectTreeNode::subTreeByNodeID( $fetchParams, 1 );
-		if( count( $nodes ) > 0 ) {
-			return $nodes[0];
-		}
-
 		return null;
 	}
 
 	public function processLocations( array $locations ) {
-		$root  = eZContentObjectTreeNode::fetchByURLPath( 'buy' );
+		$root = eZContentObjectTreeNode::fetchByURLPath( static::$rootNodeURLPath );
+		if( $root instanceof eZContentObjectTreeNode === false ) {
+			$message = 'Root node with URL path "' . static::$rootNodeURLPath . '" is missing';
+			ContentSyncImport::addLogtMessage( $message );
+		}
+
 		$nodes = array();
 		foreach( $locations as $location ) {
-			$attrs = $location->attributes();
-			if( (string) $location['type'] === ContentSyncSerializeProductCategory::$classIdentifier ) {
-				$nodes[] = $this->fetchNode( (string) $location['unique_id'] );
-			} elseif( (string) $location['type'] === 'root' ) {
+			$type     = (string) $location['type'];
+			$uniqueID = (string) $location['unique_id'];
+
+			if( $type === ContentSyncSerializeProductCategory::$classIdentifier ) {
+				$node = $this->fetchNode( $uniqueID );
+				if( $node instanceof eZContentObjectTreeNode ) {
+					$nodes[] = $node;
+				} else {
+					$message = 'Parent node "' . $uniqueID . '" (type: ' . $type . ') does not exist';
+					ContentSyncImport::addLogtMessage( $message );
+				}
+			} elseif(
+				$type === 'root'
+				&& $root instanceof eZContentObjectTreeNode
+			) {
 				$nodes[] = $root;
 			}
 		}
@@ -58,57 +58,25 @@ class ContentSyncImportHandlerProductCategory extends ContentSyncImportHandlerBa
 		return $nodes;
 	}
 
-	public function processAttributes( array $attributes, eZContentObjectVersion $existingVerion = null ) {
-		$return = $this->processSimpleAttributes( $attributes );
-
-		// Image attriubte
-		foreach( $attributes as $attribute ) {
-			if( (string) $attribute['identifier'] === 'image' ) {
-				$return = array_merge(
-					$return,
-					self::processRealtedImagesAttribute(
-						$attribute,
-						self::getImagesContainerNode(),
-						$existingVerion
-					)
-				);
-				break;
-			}
-		}
-
-		return $return;
-	}
-
-	private function processSimpleAttributes( array $attributes ) {
-		$return      = array();
-		$simpleAttrs = array(
-			'name',
-			'short_name',
-			'description',
-			'category_message',
-			'identifier',
-			'tags',
-			'xrow_prod_desc',
-			'show_in_main_menu',
-			'show_in_products_menu'
-		);
+	protected function processSimpleAttributes( array $attributes ) {
+		$return = array();
 		foreach( $attributes as $attibute ) {
 			$identifier = (string) $attibute['identifier'];
-			if( in_array( $identifier, $simpleAttrs ) ) {
+			if( in_array( $identifier, static::$simpleAttributes ) ) {
 				$return[ $identifier ] = (string) $attibute;
 			}
 		}
 		return $return;
 	}
 
-	public static function processRealtedImagesAttribute(
+	protected static function processRealtedImagesAttribute(
 		SimpleXMLElement $attribute,
 		eZContentObjectTreeNode $imagesContainer,
 		eZContentObjectVersion $version = null
 	) {
 		$return = array();
 		if( $version instanceof eZContentObjectVersion ) {
-			$imageHashes = self::getExistingImageHashes( $version, (string) $attribute['identifier'] );
+			$imageHashes = static::getExistingImageHashes( $version, (string) $attribute['identifier'] );
 		}
 
 		foreach( $attribute->image as $image ) {
@@ -125,11 +93,11 @@ class ContentSyncImportHandlerProductCategory extends ContentSyncImportHandlerBa
 			if( isset( $imageHashes[ $hash ] ) ) {
 				$return[] = $imageHashes[ $hash ];
 			} else {
-				$newImage = self::publishNewImage( $imagesContainer, $image );
+				$newImage = static::publishNewImage( $imagesContainer, $image );
 				if( $newImage instanceof eZContentObject ) {
 					$return[] = $newImage->attribute( 'id' );
 					$message = 'New image "' . $newImage->attribute( 'name' )
-						. '" (Node ID: ' . $newImage->attribute( 'main_node_id' ) .  ') is created';
+						. '" (Node ID: ' . $newImage->attribute( 'main_node_id' ) .  ') was created';
 				} else {
 					$message = 'New image publishing failed';
 				}
@@ -140,7 +108,7 @@ class ContentSyncImportHandlerProductCategory extends ContentSyncImportHandlerBa
 		return implode( $return, '-' );
 	}
 
-	private static function getExistingImageHashes( eZContentObjectVersion $version, $attr ) {
+	protected static function getExistingImageHashes( eZContentObjectVersion $version, $attr ) {
 		$hashes  = array();
 		$dataMap = $version->attribute( 'data_map' );
 		if( isset( $dataMap[ $attr ] ) === false ) {
@@ -173,7 +141,7 @@ class ContentSyncImportHandlerProductCategory extends ContentSyncImportHandlerBa
 			$dataMap      = $image->attribute( 'data_map' );
 			$aliasHandler = $dataMap['image']->attribute( 'content' );
 
-			$hash = self::getImageHash( $aliasHandler );
+			$hash = static::getImageHash( $aliasHandler );
 			if( $hash !== null ) {
 				$imageHashes[ $hash ] = $image->attribute( 'id' );
 			}
@@ -182,7 +150,7 @@ class ContentSyncImportHandlerProductCategory extends ContentSyncImportHandlerBa
 		return $imageHashes;
 	}
 
-	public static function getImageHash( $aliasHandler ) {
+	protected static function getImageHash( $aliasHandler ) {
 		// Image has no valid file
 		if( $aliasHandler->attribute( 'is_valid' ) === false ) {
 			return null;
@@ -204,11 +172,11 @@ class ContentSyncImportHandlerProductCategory extends ContentSyncImportHandlerBa
 		return hash_file( 'md5', $file );
 	}
 
-	public static function getImagesContainerNode() {
-		return eZContentObjectTreeNode::fetchByURLPath( 'files/images/product_categories' );
+	protected static function getImagesContainerNode() {
+		return eZContentObjectTreeNode::fetchByURLPath( static::$imageContainerURLPath );
 	}
 
-	public static function publishNewImage( eZContentObjectTreeNode $parentNode, SimpleXMLElement $image ) {
+	protected static function publishNewImage( eZContentObjectTreeNode $parentNode, SimpleXMLElement $image ) {
 		$tmpFile = 'var/cache/' . (string) $image->image_file->original_filename;
 		if( copy( (string) $image->image_file->file, $tmpFile ) === false ) {
 			return false;
