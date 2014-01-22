@@ -27,8 +27,6 @@ class ContentSyncSerializeProductCategory extends ContentSyncSerializeBase
 		$request->setAttribute( 'type', self::$classIdentifier );
 		$doc->appendChild( $request );
 
-				$parentIdentifiers = explode( ',', $dataMap['parent_category_identifiers']->toString() );
-
 		// Locations
 		$locations         = $doc->createElement( 'locations' );
 		$parentIdentifiers = trim( $dataMap['parent_category_identifiers']->toString() );
