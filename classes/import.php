@@ -77,6 +77,9 @@ class ContentSyncImport
 
 		ContentSyncType::disable();
 
+		$moduleRepositories = eZModule::activeModuleRepositories( false );
+		eZModule::setGlobalPathList( $moduleRepositories );
+
 		$this->processObjectData();
 		$this->validateObjectData();
 		$this->fetchImportHandler();

@@ -65,49 +65,4 @@ class ContentSyncImportHandlerProductCategory extends ContentSyncImportHandlereR
 
 		return $return;
 	}
-
-	public function import( array $objectData, eZContentObjectVersion $existingVersion = null ) {
-		$result = array(
-			'object_id'      => null,
-			'object_version' => null,
-			'status'         => ContentSyncLogImport::STATUS_SKIPPED
-		);
-
-		$publishParams = array(
-			'class_identifier' => $objectData['type'],
-			'attributes'       => $objectData['attributes'],
-			'language'         => $objectData['language']
-		);
-
-		$object = $this->fetchObject( $objectData['unique_id'] );
-		if( $object instanceof eZContentObject === false ) {
-			$mainParent        = $objectData['locations'][0];
-			$additionalParents = array_slice( $objectData['locations'], 1 );
-
-			$publishParams['parent_node_id'] = $mainParent->attribute( 'node_id' );
-			$object = ContentSyncContentFunctions::createAndPublishObject( $publishParams );
-
-			if( $object instanceof eZContentObject ) {
-				$result['object_id']      = $object->attribute( 'id' );
-				$result['object_version'] = $object->attribute( 'current_version' );
-				$result['status']         = ContentSyncLogImport::STATUS_CREATED;
-			} else {
-				throw new Exception( 'Object creation error' );
-			}
-
-			if( count( $additionalParents ) > 0 ) {
-				$additionaParentNodeIDs = array();
-				foreach( $additionalParents as $additionalParent ) {
-					$additionaParentNodeIDs[] = $additionalParent->attribute( 'node_id' );
-				}
-
-				eZContentOperationCollection::addAssignment(
-					$object->attribute( 'main_node_id' ),
-					$object->attribute( 'id' ),
-					$additionaParentNodeIDs
-				);
-			}
-		}
-		return $result;
-	}
 }

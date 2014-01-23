@@ -53,7 +53,7 @@ class ContentSyncImportHandlereRPBase extends ContentSyncImportHandlerBase
 		foreach( $nodes as $key => $node ) {
 			if(
 				$node instanceof eZContentObjectTreeNode === false
-				|| in_array( $existingParentNodeIDs, $node->attribute( 'node_id' ) )
+				|| in_array( $node->attribute( 'node_id' ), $existingParentNodeIDs )
 			) {
 				unset( $nodes[ $key ] );
 			}
@@ -188,9 +188,6 @@ class ContentSyncImportHandlereRPBase extends ContentSyncImportHandlerBase
 			return false;
 		}
 
-		$moduleRepositories = eZModule::activeModuleRepositories( false );
-		eZModule::setGlobalPathList( $moduleRepositories );
-
 		$name    = $image->xpath( '..//attribute[@identifier="name"]' );
 		$caption = $image->xpath( '..//attribute[@identifier="caption"]' );
 		$params  = array(
@@ -206,5 +203,136 @@ class ContentSyncImportHandlereRPBase extends ContentSyncImportHandlerBase
 		unset( $tmpFile );
 
 		return eZContentFunctions::createAndPublishObject( $params );
+	}
+
+	public function import( array $objectData, eZContentObjectVersion $existingVersion = null ) {
+		$object = $this->fetchObject( $objectData['unique_id'] );
+		if( $object instanceof eZContentObject === false ) {
+			return $this->createObject( $objectData );
+		} else {
+			return $this->updateObject( $objectData, $object, $existingVersion );
+		}
+		return $result;
+	}
+
+	protected function createObject( array $objectData ) {
+		$result = array(
+			'object_id'      => null,
+			'object_version' => null,
+			'status'         => ContentSyncLogImport::STATUS_SKIPPED
+		);
+
+		$mainParent        = $objectData['locations'][0];
+		$additionalParents = array_slice( $objectData['locations'], 1 );
+
+		$publishParams = array(
+			'class_identifier' => $objectData['type'],
+			'attributes'       => $objectData['attributes'],
+			'language'         => $objectData['language'],
+			'parent_node_id'   => $mainParent->attribute( 'node_id' )
+		);
+
+		$object = ContentSyncContentFunctions::createAndPublishObject( $publishParams );
+		if( $object instanceof eZContentObject ) {
+			$result['object_id']      = $object->attribute( 'id' );
+			$result['object_version'] = $object->attribute( 'current_version' );
+			$result['status']         = ContentSyncLogImport::STATUS_CREATED;
+		} else {
+			throw new Exception( 'Object creation error' );
+		}
+
+		if( count( $additionalParents ) > 0 ) {
+			$additionaParentNodeIDs = array();
+			foreach( $additionalParents as $additionalParent ) {
+				$additionaParentNodeIDs[] = $additionalParent->attribute( 'node_id' );
+			}
+
+			$message = 'Creating additional locations under following nodes: ' . implode( ', ', self::getNodeURLPathes( $additionaParentNodeIDs ) );
+			ContentSyncImport::addLogtMessage( $message );
+			eZContentOperationCollection::addAssignment(
+				$object->attribute( 'main_node_id' ),
+				$object->attribute( 'id' ),
+				$additionaParentNodeIDs
+			);
+		}
+
+		return $result;
+	}
+
+	protected function updateObject(
+		array $objectData,
+		eZContentObject $object
+	) {
+		$result = array(
+			'object_id'      => null,
+			'object_version' => null,
+			'status'         => ContentSyncLogImport::STATUS_SKIPPED
+		);
+
+		$publishParams = array(
+			'attributes' => $objectData['attributes'],
+			'language'   => $objectData['language']
+		);
+
+		$newVersion = ContentSyncContentFunctions::updateAndPublishObject( $object, $publishParams );
+		if( $newVersion instanceof eZContentObjectVersion ) {
+			$result['object_id']      = $object->attribute( 'id' );
+			$result['object_version'] = $newVersion->attribute( 'version' );
+			$result['status']         = ContentSyncLogImport::STATUS_UPDATED;
+		} else {
+			throw new Exception( 'Object update error' );
+		}
+
+
+		$newParentNodeIDs = array();
+		foreach( $objectData['locations'] as $node ) {
+			$newParentNodeIDs[] = $node->attribute( 'node_id' );
+		}
+		$existingParentNodeIDs = array();
+		$existingNodes         = $object->attribute( 'assigned_nodes' );
+		foreach( $existingNodes as $existingNode ) {
+			$existingParentNodeIDs[ $existingNode->attribute( 'node_id' ) ] = $existingNode->attribute( 'parent_node_id' );
+		}
+
+		$addLocations = array();
+		foreach( $newParentNodeIDs as $newParentNodeID ) {
+			if( in_array( $newParentNodeID, $existingParentNodeIDs ) === false ) {
+				$addLocations[] = $newParentNodeID;
+			}
+		}
+		if( count( $addLocations ) > 0 ) {
+			$message = 'Creating new locations under following nodes: ' . implode( ', ', self::getNodeURLPathes( $addLocations ) );
+			ContentSyncImport::addLogtMessage( $message );
+			eZContentOperationCollection::addAssignment(
+				$object->attribute( 'main_node_id' ),
+				$object->attribute( 'id' ),
+				$addLocations
+			);
+		}
+
+		$removeLocations = array();
+		foreach( $existingParentNodeIDs as $nodeID => $existingParentNodeID ) {
+			if( in_array( $existingParentNodeID, $newParentNodeIDs ) === false ) {
+				$removeLocations[] = $nodeID;
+			}
+		}
+		if( count( $removeLocations ) > 0 ) {
+			$message = 'Removing following locations: ' . implode( ', ', self::getNodeURLPathes( $removeLocations ) );
+			ContentSyncImport::addLogtMessage( $message );
+			eZContentOperationCollection::removeNodes( $removeLocations );
+		}
+
+		return $result;
+	}
+
+	protected static function getNodeURLPathes( array $nodeIDs ) {
+		$return = array();
+		foreach( $nodeIDs as $nodeID ) {
+			$node = eZContentObjectTrashNode::fetch( $nodeID, false, false );
+			if( is_array( $node ) ) {
+				$return[] = $node['path_identification_string'];
+			}
+		}
+		return $return;
 	}
 }
