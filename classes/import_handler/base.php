@@ -16,7 +16,7 @@ abstract class ContentSyncImportHandlerBase
 	 * @return ContentSyncImportHandlerBase|null
 	 */
 	public final static function get( $classIdentifier ) {
-		$className = 'ContentSyncImportHandler' . self::toCamelCase( $classIdentifier );
+		$className = self::getClassName( $classIdentifier );
 		if( class_exists( $className ) === false ) {
 			return null;
 		}
@@ -27,6 +27,15 @@ abstract class ContentSyncImportHandlerBase
 		}
 
 		return call_user_func( array( $className, 'getInstance' ) );
+	}
+
+	/**
+	 * Returns import handler class name
+	 * @param string $classIdentifier
+	 * @return string
+	 */
+	public static function getClassName( $classIdentifier ) {
+		return 'ContentSyncImportHandler' . self::toCamelCase( $classIdentifier );
 	}
 
 	/**

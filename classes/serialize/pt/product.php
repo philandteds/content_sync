@@ -48,6 +48,10 @@ class ContentSyncSerializeXrowProduct extends ContentSyncSerializePTBase
 		// Additional categoreis
 		$parentIdentifiers = explode( ',', trim( $dataMap['parent_category_identifiers']->toString() ) );
 		foreach( $parentIdentifiers as $parentIdentifier ) {
+			if(strlen( $parentIdentifier ) === 0 ) {
+				continue;
+			}
+
 			$location = self::createLocationNode(
 				$doc,
 				ContentSyncSerializeProductCategory::$classIdentifier,
@@ -113,13 +117,11 @@ class ContentSyncSerializeXrowProduct extends ContentSyncSerializePTBase
 		// Colour image map
 		$colourMap = self::getColourMapNode( $doc, $dataMap['colour_image_map'] );
 		$attributes->appendChild( $colourMap );
-/*
-    Product page link
-	$node = $object->attribute( 'main_node' );
-		var_dump( $language );
-		$node->setCurrentLanguage( $language );
-		var_dump( $node->CurrentLanguage );
- */
+
+		// Product page link
+		$productURL = self::getTranslatedProductURLNode( $doc, $dataMap['product_complex_link'], $language );
+		$attributes->appendChild( $productURL );
+
 		$request->appendChild( $attributes );
 
 		return $doc->saveXML();
@@ -173,5 +175,54 @@ class ContentSyncSerializeXrowProduct extends ContentSyncSerializePTBase
 		}
 
 		return $colourMap;
+	}
+
+	protected static function getTranslatedProductURLNode( $doc, eZContentObjectAttribute $attribute, $language ) {
+		$identifier    = $attribute->attribute( 'contentclass_attribute_identifier' );
+		$productURL    = self::createAttributeNode( $doc, $identifier, null );
+		$relatedObject = $attribute->attribute( 'content' );
+		if( $relatedObject instanceof eZContentObject === false ) {
+			return $productURL;
+		}
+
+		$fetchParams = array(
+			'Depth'           => false,
+			'Limitation'      => array(),
+			'LoadDataMap'     => false,
+			'AsObject'        => true,
+			'Language'        => $language,
+			'MainNodeOnly'    => true,
+			'AttributeFilter' => array(
+				array( 'contentobject_id', '=', $relatedObject->attribute( 'id' ) )
+			)
+		);
+		// Try to fetch node in specified language first
+		$nodes = eZContentObjectTreeNode::subTreeByNodeID( $fetchParams, 1 );
+		if( count( $nodes ) === 0 ) {
+			// Theres is no translation for related obect, so use default node
+			$nodes = array( $relatedObject->attribute( 'main_node' ) );
+		}
+
+		// No node for related obect was found
+		if( count( $nodes ) === 0 ) {
+			return $productURL;
+		}
+
+		$node         = $nodes[0];
+		$nodeLanguage = $node->CurrentLanguage;
+		$languageSA   = eZIni::instance()->variable( 'RegionalSettings', 'LanguageSA' );
+		// No siteaccess for noed`s language, so we are not able to build the full link
+		if( isset( $languageSA[ $languageSA ] ) === false ) {
+			return $productURL;
+		}
+		$SAIni = eZINI::getSiteAccessIni( $languageSA[ $languageSA ], 'site.ini' );
+
+		$url = $nodes[0]->attribute( 'url_alias' );
+		eZURI::transformURI( $url, false, 'relative' );
+		$url = 'http://' . $SAIni->variable( 'SiteSettings', 'SiteURL' );
+
+		$productURL->appendChild( $doc->createCDATASection( $url ) );
+
+		return $productURL;
 	}
 }

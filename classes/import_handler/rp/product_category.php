@@ -23,7 +23,7 @@ class ContentSyncImportHandlerProductCategory extends ContentSyncImportHandlereR
 		'parent_category_identifier'
 	);
 
-	public function fetchNode( $uniqueID ) {
+	public static function fetchNode( $uniqueID ) {
 		$class       = ContentSyncSerializeProductCategory::$classIdentifier;
 		$fetchParams = array(
 			'Depth'            => false,

@@ -164,13 +164,17 @@ class ContentSyncImport
 			return $version;
 		}
 
-		$language = eZContentLanguage::fetchByLocale( $this->objectData['language'] );
+		return self::getLatestTranslatedVersion( $object->attribute( 'id' ), $this->objectData['language'] );
+	}
+
+	public static function getLatestTranslatedVersion( $objectID, $locale ) {
+		$language = eZContentLanguage::fetchByLocale( $locale );
 		$versions = eZPersistentObject::fetchObjectList(
 			eZContentObjectVersion::definition(),
 			null,
 			array(
 				'initial_language_id' => $language->attribute( 'id' ),
-				'contentobject_id'    => $object->attribute( 'id' )
+				'contentobject_id'    => $objectID
 			),
 			array(
 				'version' => 'desc'

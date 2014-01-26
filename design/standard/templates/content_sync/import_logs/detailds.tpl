@@ -37,7 +37,7 @@
 			</div>
 			<div class="block">
 				<label>{'Result'|i18n( 'extension/content_sync' )}:</label>
-				{$log.result|nl2br}
+				{if $log.result}{$log.result|nl2br}{else}{'No any additional locations or related objects were created'|i18n( 'extension/content_sync' )}{/if}
 			</div>
 			<div class="block">
 				<label>{'Error'|i18n( 'extension/content_sync' )}:</label>

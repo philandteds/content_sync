@@ -13,11 +13,11 @@ class ContentSyncImportHandlereRPBase extends ContentSyncImportHandlerBase
 	protected static $simpleAttributes      = array();
 
 	public function fetchObject( $uniqueID ) {
-		$node = $this->fetchNode( $uniqueID );
+		$node = static::fetchNode( $uniqueID );
 		return $node instanceof eZContentObjectTreeNode ? $node->attribute( 'object' ) : null;
 	}
 
-	public function fetchNode( $uniqueID ) {
+	public static function fetchNode( $uniqueID ) {
 		return null;
 	}
 
@@ -33,32 +33,48 @@ class ContentSyncImportHandlereRPBase extends ContentSyncImportHandlerBase
 			$type     = (string) $location['type'];
 			$uniqueID = (string) $location['unique_id'];
 
-			if( $type === ContentSyncSerializeProductCategory::$classIdentifier ) {
-				$node = $this->fetchNode( $uniqueID );
-				if( $node instanceof eZContentObjectTreeNode ) {
-					$nodes[] = $node;
-				} else {
+			if( $type == 'root' ) {
+				if( $root instanceof eZContentObjectTreeNode ) {
+					$nodes[] = $root;
+				}
+			} else {
+				$className = self::getClassName( $type );
+				if( is_callable( array( $className, 'fetchNode' ) ) === false ) {
+					$message = $className . ':: is not callable. Skipping parent node "' . $uniqueID . '" (type: ' . $type . ')';
+					ContentSyncImport::addLogtMessage( $message );
+					continue;
+				}
+
+				if( strlen( $uniqueID ) === 0 ) {
+					$message = 'Skipping node with empty unique ID';
+					ContentSyncImport::addLogtMessage( $message );
+					continue;
+				}
+
+				$node = $className::fetchNode( $uniqueID );
+				if( $node instanceof eZContentObjectTreeNode === false ) {
 					$message = 'Parent node "' . $uniqueID . '" (type: ' . $type . ') does not exist';
 					ContentSyncImport::addLogtMessage( $message );
+					continue;
 				}
-			} elseif(
-				$type === 'root'
-				&& $root instanceof eZContentObjectTreeNode
-			) {
-				$nodes[] = $root;
+				$nodes[] = $node;
 			}
 		}
 
-		$existingParentNodeIDs = array();
+		return $this->uniqueNodes( $nodes );
+	}
+
+	protected function uniqueNodes( array $nodes ) {
+		$nodeIDs = array();
 		foreach( $nodes as $key => $node ) {
 			if(
 				$node instanceof eZContentObjectTreeNode === false
-				|| in_array( $node->attribute( 'node_id' ), $existingParentNodeIDs )
+				|| in_array( $node->attribute( 'node_id' ), $nodeIDs )
 			) {
 				unset( $nodes[ $key ] );
 			}
 
-			$existingParentNodeIDs[] = $node->attribute( 'node_id' );
+			$nodeIDs[] = $node->attribute( 'node_id' );
 		}
 
 		return array_values( $nodes );
@@ -75,12 +91,51 @@ class ContentSyncImportHandlereRPBase extends ContentSyncImportHandlerBase
 		return $return;
 	}
 
+	protected static function processImageAttribute(
+		SimpleXMLElement $attribute,
+		eZContentObjectVersion $version = null
+	) {
+		if(
+			isset( $attribute->image_file ) === false
+			|| isset( $attribute->image_file->file_hash ) === false
+			|| strlen( (string) $attribute->image_file->file_hash ) === 0
+		) {
+			// There is invalid image in the import request
+			return null;
+		}
+
+		$identifier   = (string) $attribute['identifier'];
+		$existingHash = null;
+
+		if( $version instanceof eZContentObjectVersion ) {
+			$dataMap = $version->attribute( 'data_map' );
+			if( isset( $dataMap[ $identifier ] ) ) {
+				$aliasHandler = $dataMap[ $identifier ]->attribute( 'content' );
+				$existingHash = static::getImageHash( $aliasHandler );
+			}
+		}
+
+		// No image change is required
+		if( $existingHash == (string) $attribute->image_file->file_hash ) {
+			return null;
+		}
+
+		// Copy image to local file, it should be removed after object being published
+		$tmpFile = 'var/cache/' . (string) $attribute->image_file->original_filename;
+		if( copy( (string) $attribute->image_file->file, $tmpFile ) === false ) {
+			return null;
+		}
+
+		return $tmpFile;
+	}
+
 	protected static function processRealtedImagesAttribute(
 		SimpleXMLElement $attribute,
 		eZContentObjectTreeNode $imagesContainer,
 		eZContentObjectVersion $version = null
 	) {
-		$return = array();
+		$return      = array();
+		$imageHashes = array();
 		if( $version instanceof eZContentObjectVersion ) {
 			$imageHashes = static::getExistingImageHashes( $version, (string) $attribute['identifier'] );
 		}
@@ -103,7 +158,8 @@ class ContentSyncImportHandlereRPBase extends ContentSyncImportHandlerBase
 				if( $newImage instanceof eZContentObject ) {
 					$return[] = $newImage->attribute( 'id' );
 					$message = 'New image "' . $newImage->attribute( 'name' )
-						. '" (Node ID: ' . $newImage->attribute( 'main_node_id' ) .  ') was created';
+						. '" (' . (string) $attribute['identifier'] . ')'
+						. ' (Node ID: ' . $newImage->attribute( 'main_node_id' ) .  ') was created';
 				} else {
 					$message = 'New image publishing failed';
 				}
@@ -128,6 +184,18 @@ class ContentSyncImportHandlereRPBase extends ContentSyncImportHandlerBase
 				break;
 			}
 			case eZObjectRelationListType::DATA_TYPE_STRING: {
+				$relations      = $imageAttribute->attribute( 'content' );
+				$relations      = $relations['relation_list'];
+				$existingImages = array();
+				foreach( $relations as $relation ) {
+					$image = eZContentObject::fetch( $relation['contentobject_id'] );
+					if( $image instanceof eZContentObject === false ) {
+						continue;
+					}
+
+					$existingImages[] = $image;
+				}
+
 				break;
 			}
 			default:
@@ -149,11 +217,12 @@ class ContentSyncImportHandlereRPBase extends ContentSyncImportHandlerBase
 
 			$hash = static::getImageHash( $aliasHandler );
 			if( $hash !== null ) {
-				$imageHashes[ $hash ] = $image->attribute( 'id' );
+				$hashes[ $hash ] = $image->attribute( 'id' );
 			}
+
 		}
 
-		return $imageHashes;
+		return $hashes;
 	}
 
 	protected static function getImageHash( $aliasHandler ) {
@@ -164,7 +233,6 @@ class ContentSyncImportHandlereRPBase extends ContentSyncImportHandlerBase
 
 		$original = $aliasHandler->attribute( 'original' );
 		$file     = $original['url'];
-
 		// Fetch image if file storage is clustered
 		eZClusterFileHandler::instance( $file )->fetch();
 		// Image file does not exist
@@ -188,8 +256,8 @@ class ContentSyncImportHandlereRPBase extends ContentSyncImportHandlerBase
 			return false;
 		}
 
-		$name    = $image->xpath( '..//attribute[@identifier="name"]' );
-		$caption = $image->xpath( '..//attribute[@identifier="caption"]' );
+		$name    = $image->xpath( './/attribute[@identifier="name"]' );
+		$caption = $image->xpath( './/attribute[@identifier="caption"]' );
 		$params  = array(
 			'parent_node_id'   => $parentNode->attribute( 'node_id' ),
 			'class_identifier' => ContentSyncSerializeImage::$classIdentifier,
@@ -200,9 +268,10 @@ class ContentSyncImportHandlereRPBase extends ContentSyncImportHandlerBase
 			)
 		);
 
-		unset( $tmpFile );
+		$result = eZContentFunctions::createAndPublishObject( $params );
+		@unlink( $tmpFile );
 
-		return eZContentFunctions::createAndPublishObject( $params );
+		return $result;
 	}
 
 	public function import( array $objectData, eZContentObjectVersion $existingVersion = null ) {
