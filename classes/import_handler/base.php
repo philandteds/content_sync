@@ -71,9 +71,10 @@ abstract class ContentSyncImportHandlerBase
 
 	/**
 	 * @param array[SimpleXMLElement] $locations
+	 * @param array $objectData
 	 * @return array[eZContentObjectTreeNode]
 	 */
-	public function processLocations( array $locations ) {
+	public function processLocations( array $locations, array $objectData ) {
 		return array();
 	}
 

@@ -102,7 +102,8 @@ class ContentSyncSerializeXrowProduct extends ContentSyncSerializePTBase
 			if( $image instanceof eZContentObject === false ) {
 				continue;
 			}
-			$images->appendChild( self::getImageNode( $doc, $image, $relation['contentobject_version'] ) );
+			//$images->appendChild( self::getImageNode( $doc, $image, $relation['contentobject_version'] ) );
+			$images->appendChild( self::getImageNode( $doc, $image ) );
 		}
 		$attributes->appendChild( $images );
 
@@ -212,14 +213,15 @@ class ContentSyncSerializeXrowProduct extends ContentSyncSerializePTBase
 		$nodeLanguage = $node->CurrentLanguage;
 		$languageSA   = eZIni::instance()->variable( 'RegionalSettings', 'LanguageSA' );
 		// No siteaccess for noed`s language, so we are not able to build the full link
-		if( isset( $languageSA[ $languageSA ] ) === false ) {
+
+		if( isset( $languageSA[ $language ] ) === false ) {
 			return $productURL;
 		}
-		$SAIni = eZINI::getSiteAccessIni( $languageSA[ $languageSA ], 'site.ini' );
+		$SAIni = eZINI::getSiteAccessIni( $languageSA[ $language ], 'site.ini' );
 
 		$url = $nodes[0]->attribute( 'url_alias' );
 		eZURI::transformURI( $url, false, 'relative' );
-		$url = 'http://' . $SAIni->variable( 'SiteSettings', 'SiteURL' );
+		$url = 'http://' . $SAIni->variable( 'SiteSettings', 'SiteURL' ) . $url;
 
 		$productURL->appendChild( $doc->createCDATASection( $url ) );
 

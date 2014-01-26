@@ -21,7 +21,7 @@ class ContentSyncImportHandlereRPBase extends ContentSyncImportHandlerBase
 		return null;
 	}
 
-	public function processLocations( array $locations ) {
+	public function processLocations( array $locations, array $objectData ) {
 		$root = eZContentObjectTreeNode::fetchByURLPath( static::$rootNodeURLPath );
 		if( $root instanceof eZContentObjectTreeNode === false ) {
 			$message = 'Root node with URL path "' . static::$rootNodeURLPath . '" is missing';
@@ -32,6 +32,12 @@ class ContentSyncImportHandlereRPBase extends ContentSyncImportHandlerBase
 		foreach( $locations as $location ) {
 			$type     = (string) $location['type'];
 			$uniqueID = (string) $location['unique_id'];
+
+			if( $uniqueID == $objectData['unique_id'] ) {
+				$message = 'Node can not be located under itself. Skipping parent node "' . $uniqueID . '" (type: ' . $type . ')';
+				ContentSyncImport::addLogtMessage( $message );
+				continue;
+			}
 
 			if( $type == 'root' ) {
 				if( $root instanceof eZContentObjectTreeNode ) {
