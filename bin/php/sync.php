@@ -5,7 +5,7 @@
  * @date    16 Jan 2014
  **/
 
-ini_set( 'memory_limit', '512M' );
+ini_set( 'memory_limit', '1024M' );
 
 function outputMemoryUsage( $cli ) {
 	$memoryUsage = number_format( memory_get_usage( true ) / ( 1024 * 1024 ), 2 );
@@ -27,10 +27,12 @@ $script = eZScript::instance( $scriptSettings );
 $script->startup();
 $script->initialize();
 $options = $script->getOptions(
-	'[class_identifiers:]',
+	'[class_identifiers:][offset:][limit:]',
 	'',
 	array(
-		'class_identifiers' => 'Content class identifiers, seprated by comma'
+		'class_identifiers' => 'Content class identifiers, seprated by comma',
+		'offset'            => 'Fetch objects offset',
+		'limit'             => 'fetch objects limit'
 	)
 );
 
@@ -38,6 +40,9 @@ if( strlen( $options['class_identifiers'] ) === 0 ) {
 	$cli->error( 'Please specify some content classes' );
 	$script->shutdown( 1 );
 }
+
+$offset = $options['offset'] > 0 ? (int) $options['offset'] : false;
+$limit  = $options['limit'] > 0 ? (int) $options['limit'] : false;
 
 $events = eZWorkflowEvent::fetchFilteredList( array( 'workflow_type_string' => 'event_' . ContentSyncType::TYPE_ID ) );
 if( count( $events ) === 0 ) {
@@ -78,7 +83,9 @@ foreach( $clasIdentifiers as $clasIdentifier ) {
 			'ClassFilterArray' => array( $clasIdentifier ),
 			'SortBy'           => array(
 				array( 'depth', true )
-			)
+			),
+			'Limit'            => $limit,
+			'Offset'           => $offset
 		),
 		1
 	);

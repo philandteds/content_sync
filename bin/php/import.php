@@ -5,7 +5,7 @@
  * @date    16 Jan 2014
  **/
 
-ini_set( 'memory_limit', '512M' );
+ini_set( 'memory_limit', '256M' );
 
 require 'autoload.php';
 $cli = eZCLI::instance();
