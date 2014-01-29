@@ -1,3 +1,23 @@
+<form method="post" action="{'content_sync/import_logs'|ezurl( 'no' )}">
+	<div class="box-content">
+		<div class="context-attributes">
+			<div class="object">
+				<div class="block">
+    				<label>{'Filter object'|i18n( 'extension/content_sync' )}:</label>
+					<p>
+					{if $filter_object}
+						<a href="{$filter_object.main_node.url_alias|ezurl( 'no' )}">{$filter_object.name|wash}</a>
+					{else}
+						{'none'|i18n( 'extension/content_sync' )}
+					{/if}
+					</p>
+					<input class="button" type="submit" name="BrowseFilterObjectButton" value="{'Select object'|i18n( 'extension/content_sync' )}" />
+				</div>
+			</div>
+		</div>
+	</div>
+</form>
+		
 <div class="context-block">
 
 	<div class="box-header"><div class="box-tc"><div class="box-ml"><div class="box-mr"><div class="box-tl"><div class="box-tr">
@@ -40,7 +60,7 @@
 		uri='design:navigator/google.tpl'
 		page_uri='content_sync/import_logs'
 		item_count=$total_count
-		view_parameters=hash( 'limit', $limit, 'offset', $offset )
+		view_parameters=hash( 'limit', $limit, 'offset', $offset, 'filter_object_id', $filter_object.id )
 		item_limit=$limit
 	}
 

@@ -18,9 +18,16 @@ $ViewList = array(
 		'params'    => array( 'ObjectID', 'Version' )
 	),
 	'request_logs' => array(
-		'functions'        => array( 'logs' ),
-		'script'           => 'request_logs.php',
-		'unordered_params' => array( 'NewCreated' ),
+		'functions'           => array( 'logs' ),
+		'script'              => 'request_logs.php',
+		'unordered_params'    => array( 'NewCreated' ),
+		'single_post_actions' => array(
+			'BrowseFilterObjectButton' => 'BrowseFilterObject'
+		),
+		'single_get_actions'  => array(
+			'SetFilterObject'
+		),
+		'post_actions'        => array( 'BrowseActionName' )
 	),
 	'request_details' => array(
 		'functions' => array( 'logs' ),
@@ -28,8 +35,15 @@ $ViewList = array(
 		'params'    => array( 'ID' )
 	),
 	'import_logs' => array(
-		'functions' => array( 'logs' ),
-		'script'    => 'import_logs.php'
+		'functions'           => array( 'logs' ),
+		'script'              => 'import_logs.php',
+		'single_post_actions' => array(
+			'BrowseFilterObjectButton' => 'BrowseFilterObject'
+		),
+		'single_get_actions'  => array(
+			'SetFilterObject'
+		),
+		'post_actions'        => array( 'BrowseActionName' )
 	),
 	'import_details' => array(
 		'functions' => array( 'logs' ),
