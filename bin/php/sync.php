@@ -127,7 +127,6 @@ foreach( $clasIdentifiers as $clasIdentifier ) {
 			}
 		}
 
-		$versions  = array( $object->attribute( 'current_version' ) );
 		foreach( $versions as $versionNumber ) {
 			$objectsToSync = ContentSyncType::getObjectsToSync( $object, $versionNumber );
 			foreach( $objectsToSync as $info ) {
