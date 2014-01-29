@@ -22,7 +22,8 @@ class ContentSyncType extends eZWorkflowEventType
 				'content' => array(
 					'publish'        => array( 'after' ),
 					'addlocation'    => array( 'after' ),
-					'removelocation' => array( 'after' )
+					'removelocation' => array( 'after' ),
+					'delete'         => array( 'before' )
 				)
 			)
 		);
@@ -36,8 +37,15 @@ class ContentSyncType extends eZWorkflowEventType
 		$parameters = $process->attribute( 'parameter_list' );
 		$object     = null;
 
+		// Delete object
+		if( $parameters['module_function'] == 'delete' ) {
+			self::remove( $parameters['node_id_list'], $event );
+			return eZWorkflowType::STATUS_ACCEPTED;
+		}
+
 		// content_removelocation operation has no object_id parameter
 		if( $parameters['module_function'] == 'removelocation' ) {
+			var_dump( eZContentObjectTreeNode::fetch( 20961 )  ); exit();
 			$object = eZContentObject::fetch( eZHTTPTool::instance()->postVariable( 'ContentObjectID' ) );
 		} else {
 			$object = eZContentObject::fetch( $parameters['object_id'] );
@@ -67,8 +75,59 @@ class ContentSyncType extends eZWorkflowEventType
 		}
 
 		$objectData = $syncHander->getObjectData( $object, $version );
-		$data       = array(
-			'request' => $objectData
+
+		self::sendRequest(
+			$event,
+			$objectData,
+			$object->attribute( 'id' ),
+			$version->attribute( 'version' )
+		);
+	}
+
+	protected static function remove( array $nodeIDs, $event ) {
+		$objectIDs = array();
+		foreach( $nodeIDs as $nodeID ) {
+			$node = eZContentObjectTreeNode::fetch( $nodeID );
+			if( $node instanceof eZContentObjectTreeNode === false ) {
+				continue;
+			}
+
+			$objectIDs[] = $node->attribute( 'contentobject_id' );
+		}
+
+		$objectIDs = array_unique( $objectIDs );
+		foreach( $objectIDs as $objectID ) {
+			$object = eZContentObject::fetch( $objectID );
+			if( $object instanceof eZContentObject === false ) {
+				continue;
+			}
+
+			self::requestContentSyncRemove( $object, $event );
+		}
+	}
+
+	public static function requestContentSyncRemove( eZContentObject $object, $event ) {
+		$syncHander = ContentSyncSerializeBase::get( $object );
+		if( $syncHander instanceof ContentSyncSerializeBase === false ) {
+			return false;
+		}
+
+		$request = $syncHander->getRemoveObjectData( $object );
+		if( $request === null ) {
+			return false;
+		}
+
+		self::sendRequest(
+			$event,
+			$request,
+			$object->attribute( 'id' ),
+			$object->attribute( 'current_version' )
+		);
+	}
+
+	protected static function sendRequest( $event, $request, $objectID, $version ) {
+		$data = array(
+			'request' => $request
 		);
 		if( (bool) $event->attribute( 'data_int1' ) ) {
 			$data['cli'] = 1;
@@ -90,9 +149,9 @@ class ContentSyncType extends eZWorkflowEventType
 		$body     = trim( substr( $response, $info['header_size'] ) );
 
 		$log = new ContentSyncLogRequest();
-		$log->setAttribute( 'object_id', $object->attribute( 'id' ) );
-		$log->setAttribute( 'object_version', $version->attribute( 'version' ) );
-		$log->setAttribute( 'object_data', $objectData );
+		$log->setAttribute( 'object_id', $objectID );
+		$log->setAttribute( 'object_version', $version );
+		$log->setAttribute( 'object_data', $request );
 		$log->setAttribute( 'url', $info['url'] );
 		$log->setAttribute( 'response_status', $info['http_code'] );
 		$log->setAttribute( 'response_headers', $header );

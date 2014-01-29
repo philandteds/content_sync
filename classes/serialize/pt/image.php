@@ -25,6 +25,14 @@ class ContentSyncSerializeImage extends ContentSyncSerializePTBase
 				$relatedObject->attribute( 'class_identifier' ) == ContentSyncSerializeProductCategory::$classIdentifier
 				|| $relatedObject->attribute( 'class_identifier' ) == ContentSyncSerializeXrowProduct::$classIdentifier
 			) {
+				$dataMap = $relatedObject->attribute( 'data_map' );
+				if( isset( $dataMap[ self::$skipSyncAttribute ] ) ) {
+					$skipAttr = $dataMap[ self::$skipSyncAttribute ];
+					if( (bool) $skipAttr->attribute( 'content' ) ) {
+						continue;
+					}
+				}
+
 				$objectsData[] = array(
 					'object'  => $relatedObject,
 					'version' => $relatedObject->attribute( 'current' )
@@ -33,5 +41,9 @@ class ContentSyncSerializeImage extends ContentSyncSerializePTBase
 		}
 
 		return $objectsData;
+	}
+
+	public function getRemoveObjectData( eZContentObject $object ) {
+		return null;
 	}
 }

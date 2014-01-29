@@ -8,9 +8,10 @@
 
 class ContentSyncImportHandlerXrowProduct extends ContentSyncImportHandlereRPBase
 {
-	protected static $rootNodeURLPath       = 'restricted_products';
-	protected static $imageContainerURLPath = 'files/images/products';
-	protected static $simpleAttributes      = array(
+	protected static $rootNodeURLPath             = 'restricted_products';
+	protected static $imageContainerURLPath       = 'files/images/products';
+	protected static $removedContainerNodeURLPath = 'restricted_products/hidden_products';
+	protected static $simpleAttributes            = array(
 		'name',
 		'product_id',
 		'version',
@@ -265,5 +266,55 @@ class ContentSyncImportHandlerXrowProduct extends ContentSyncImportHandlereRPBas
 		}
 
 		return $return;
+	}
+
+	public function remove( array $objectData ) {
+		$result = array(
+			'object_id'      => null,
+			'object_version' => null,
+			'status'         => ContentSyncLogImport::STATUS_REMOVED
+		);
+		$object = $this->fetchObject( $objectData['unique_id'] );
+
+		if( $object instanceof eZContentObject === false ) {
+			$message = 'Unable to fetch object by "' . $objectData['unique_id'] . '" unique ID';
+			ContentSyncImport::addLogtMessage( $message );
+			$result['status'] = ContentSyncLogImport::STATUS_SKIPPED;
+			return $result;
+		}
+		$result['object_id']      = $object->attribute( 'id' );
+		$result['object_version'] = $object->attribute( 'current_version' );
+
+		$removedContainer = eZContentObjectTreeNode::fetchByURLPath( static::$removedContainerNodeURLPath  );
+		if( $removedContainer instanceof eZContentObjectTreeNode === false ) {
+			$message = 'Node with URL path "' . static::$removedContainerNodeURLPath . '" is missing';
+			ContentSyncImport::addLogtMessage( $message );
+			$result['status'] = ContentSyncLogImport::STATUS_SKIPPED;
+			return $result;
+		}
+
+		$removeNodes = array();
+		$nodes       = $object->attribute( 'assigned_nodes' );
+		foreach( $nodes as $node ) {
+			if( $node->attribute( 'is_main' ) === false ) {
+				$removeNodes[] = $node->attribute( 'node_id' );
+			}
+		}
+
+		if( count( $removeNodes ) > 0 ) {
+			$message = 'Removing following locations: ' . implode( ', ', self::getNodeURLPathes( $removeNodes ) );
+			ContentSyncImport::addLogtMessage( $message );
+			eZContentOperationCollection::removeNodes( $removeNodes );
+		}
+
+		$message = 'Moving main node under "' . $removedContainer->attribute( 'path_identification_string' ) . '"';
+		ContentSyncImport::addLogtMessage( $message );
+		eZContentOperationCollection::moveNode(
+			$object->attribute( 'main_node_id' ),
+			$object->attribute( 'id' ),
+			$removedContainer->attribute( 'node_id' )
+		);
+
+		return $result;
 	}
 }

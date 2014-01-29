@@ -7,4 +7,5 @@ AvailableEventTypes[]=event_contentsync
 [OperationSettings]
 AvailableOperationList[]=content_addlocation
 AvailableOperationList[]=content_removelocation
+AvailableOperationList[]=content_delete
 */ ?>

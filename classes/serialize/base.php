@@ -77,4 +77,14 @@ abstract class ContentSyncSerializeBase
 	public function getObjectData( eZContentObject $object, eZContentObjectVersion $version ) {
 		return '<request></request>';
 	}
+
+	/**
+	 * Returns object data XML, which will be sent as content sync remove request
+	 * No content sync request will be sent, if this method returns null
+	 * @param eZContentObject $object
+	 * @return string|null Object data XML
+	 */
+	public function getRemoveObjectData( eZContentObject $object ) {
+		return '<request operation="remove"></request>';
+	}
 }

@@ -8,7 +8,21 @@
 
 class ContentSyncSerializePTBase extends ContentSyncSerializeBase
 {
-	public static $classIdentifier = null;
+	public static $classIdentifier   = null;
+	public static $skipSyncAttribute = 'disable_content_sync';
+
+	public function getObjectsToSync( eZContentObject $object, $versionNumber = null ) {
+		$version = $versionNumber === null ? $object->attribute( 'current' ) : $object->version( $versionNumber );
+		$dataMap = $version->attribute( 'data_map' );
+		if( isset( $dataMap[ self::$skipSyncAttribute ] ) ) {
+			$skipAttr = $dataMap[ self::$skipSyncAttribute ];
+			if( (bool) $skipAttr->attribute( 'content' ) ) {
+				return array();
+			}
+		}
+
+		return parent::getObjectsToSync( $object, $versionNumber );
+	}
 
 	public static function createLocationNode( $doc, $type, $uniqueID = null ) {
 		$location = $doc->createElement( 'location' );
@@ -112,5 +126,20 @@ class ContentSyncSerializePTBase extends ContentSyncSerializeBase
 		}
 
 		return $dataMap;
+	}
+
+	public function getRemoveObjectData( eZContentObject $object ) {
+		$doc = new DOMDocument( '1.0', 'UTF-8' );
+		$doc->formatOutput       = true;
+		$doc->preserveWhiteSpace = false;
+
+		$request = $doc->createElement( 'object' );
+		$request->setAttribute( 'unique_id', static::getIdentifier( $object->attribute( 'current' ) ) );
+		$request->setAttribute( 'type', static::$classIdentifier );
+		$request->setAttribute( 'remove', 'yes' );
+		$request->setAttribute( 'language', $object->attribute( 'default_language' ) );
+		$doc->appendChild( $request );
+
+		return $doc->saveXML();
 	}
 }

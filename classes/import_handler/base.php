@@ -100,4 +100,17 @@ abstract class ContentSyncImportHandlerBase
 			'status'         => ContentSyncLogImport::STATUS_SKIPPED
 		);
 	}
+
+	/**
+	 * Removes content object
+	 * @param array $objectData
+	 * @return array
+	 */
+	public function remove( array $objectData ) {
+		return array(
+			'object_id'      => null,
+			'object_version' => null,
+			'status'         => ContentSyncLogImport::STATUS_REMOVED
+		);
+	}
 }

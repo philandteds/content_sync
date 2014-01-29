@@ -11,6 +11,7 @@ class ContentSyncLogImport extends ContentSyncLog
 	const STATUS_CREATED = 1;
 	const STATUS_UPDATED = 2;
 	const STATUS_SKIPPED = 3;
+	const STATUS_REMOVED = 4;
 
 	public static function definition() {
 		return array(
@@ -106,6 +107,8 @@ class ContentSyncLogImport extends ContentSyncLog
 				return ezpI18n::tr( 'extension/content_sync', 'Object is updated' );
 			case self::STATUS_SKIPPED:
 				return ezpI18n::tr( 'extension/content_sync', 'Skipped' );
+			case self::STATUS_REMOVED:
+				return ezpI18n::tr( 'extension/content_sync', 'Removed' );
 			default:
 				return ezpI18n::tr( 'extension/content_sync', 'Unknown' );
 		}

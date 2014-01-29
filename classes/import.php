@@ -80,21 +80,26 @@ class ContentSyncImport
 		$moduleRepositories = eZModule::activeModuleRepositories( false );
 		eZModule::setGlobalPathList( $moduleRepositories );
 
-		$this->processObjectData();
-		$this->validateObjectData();
-		$this->fetchImportHandler();
-		$this->processAttributes();
-		$this->processLocations();
-		return $this->import();
-	}
-
-	private function processObjectData( ) {
 		$object = $this->DOMDocument->getElementsByTagName( 'object' );
 		if( $object->length === 0 ) {
 			throw new Exception( 'Missing "object" element' );
 		}
 
-		$object = $object->item( 0 );
+		$this->processObjectData();
+		$this->validateObjectData();
+		$this->fetchImportHandler();
+
+		if( $object->item( 0 )->hasAttribute( 'remove' ) ) {
+			return $this->remove();
+		} else {
+			$this->processAttributes();
+			$this->processLocations();
+			return $this->import();
+		}
+	}
+
+	private function processObjectData() {
+		$object = $this->DOMDocument->getElementsByTagName( 'object' )->item( 0 );
 		foreach( array_keys( $this->objectData ) as $attr ) {
 			// skip attributes and locations
 			if( is_array( $this->objectData[ $attr ] ) === true ) {
@@ -104,7 +109,7 @@ class ContentSyncImport
 			if( $object->hasAttribute( $attr ) === false ) {
 				throw new Exception( 'Missing "' . $attr.  '" attribute' );
 			}
-			if( strlen( $object->hasAttribute( $attr ) ) == 0 ) {
+			if( strlen( $object->getAttribute( $attr ) ) == 0 ) {
 				throw new Exception( '"' . $attr . '" attribute can not be empty' );
 			}
 
@@ -112,7 +117,7 @@ class ContentSyncImport
 		}
 	}
 
-	private function validateObjectData( ) {
+	private function validateObjectData() {
 		if( strlen( $this->objectData['unique_id'] ) === 0 ) {
 			throw new Exception( 'Empty "unique_id"' );
 		}
@@ -190,6 +195,10 @@ class ContentSyncImport
 	private function import() {
 		$existingVersion = $this->getExisitingObjectVersion();
 		return $this->handler->import( $this->objectData, $existingVersion );
+	}
+
+	private function remove() {
+		return $this->handler->remove( $this->objectData );
 	}
 
 	public static function addLogtMessage( $message ) {
