@@ -10,7 +10,7 @@ class ContentSyncSerializeImage extends ContentSyncSerializePTBase
 {
 	public static $classIdentifier = 'image';
 
-	public function getObjectsToSync( eZContentObject $object, $versionNumber = null ) {
+	public function getObjectsToSync( eZContentObject $object, $versionNumber = null, $language = null ) {
 		if( $versionNumber === null ) {
 			$versionNumber = $object->attribute( 'current_version' );
 		}

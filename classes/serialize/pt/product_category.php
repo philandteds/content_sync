@@ -13,7 +13,7 @@ class ContentSyncSerializeProductCategory extends ContentSyncSerializePTBase
 	public function getObjectData( eZContentObject $object, eZContentObjectVersion $version ) {
 		$dataMap    = self::fetchObjectDataMap( $object, $version );
 		$nodes      = $object->assignedNodes();
-		$language   = $version->attribute( 'initial_language' )->attribute( 'locale' );
+		$language   = self::getVersionLanguage( $version );
 		$identifier = $dataMap['identifier']->attribute( 'content' );
 
 		$doc = new DOMDocument( '1.0', 'UTF-8' );

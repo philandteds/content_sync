@@ -56,10 +56,16 @@ abstract class ContentSyncSerializeBase
 	 * Recieves the content object, and returns the data for objects which should by synced
 	 * @param eZContentObject $object
 	 * @param int $versionNumber
+	 * @param string $language
 	 * @return array The list of content objects with version
 	 */
-	public function getObjectsToSync( eZContentObject $object, $versionNumber = null ) {
+	public function getObjectsToSync( eZContentObject $object, $versionNumber = null, $language = null ) {
 		$version = $versionNumber === null ? $object->attribute( 'current' ) : $object->version( $versionNumber );
+		if( $language !== null ) {
+			$version->resetDataMap();
+			$version->CurrentLanguage = $language;
+		}
+
 		return array(
 			array(
 				'object'  => $object,
@@ -86,5 +92,15 @@ abstract class ContentSyncSerializeBase
 	 */
 	public function getRemoveObjectData( eZContentObject $object ) {
 		return '<request operation="remove"></request>';
+	}
+
+	/**
+	 * @param eZContentObjectVersion $version
+	 * @return string Language
+	 */
+	public static function getVersionLanguage( eZContentObjectVersion $version  ) {
+		return $version->CurrentLanguage
+			? $version->CurrentLanguage
+			: $version->attribute( 'initial_language' )->attribute( 'locale' );
 	}
 }

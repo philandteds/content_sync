@@ -11,7 +11,7 @@ class ContentSyncSerializePTBase extends ContentSyncSerializeBase
 	public static $classIdentifier   = null;
 	public static $skipSyncAttribute = 'disable_content_sync';
 
-	public function getObjectsToSync( eZContentObject $object, $versionNumber = null ) {
+	public function getObjectsToSync( eZContentObject $object, $versionNumber = null, $language = null ) {
 		$version = $versionNumber === null ? $object->attribute( 'current' ) : $object->version( $versionNumber );
 		$dataMap = $version->attribute( 'data_map' );
 		if( isset( $dataMap[ self::$skipSyncAttribute ] ) ) {
@@ -21,7 +21,7 @@ class ContentSyncSerializePTBase extends ContentSyncSerializeBase
 			}
 		}
 
-		return parent::getObjectsToSync( $object, $versionNumber );
+		return parent::getObjectsToSync( $object, $versionNumber, $language );
 	}
 
 	public static function createLocationNode( $doc, $type, $uniqueID = null ) {
@@ -119,7 +119,7 @@ class ContentSyncSerializePTBase extends ContentSyncSerializeBase
 		$data    = $version->fetchAttributes(
 			$version->attribute( 'version' ),
 			$object->attribute( 'id' ),
-			$version->initialLanguageCode()
+			self::getVersionLanguage( $version )
 		);
 		foreach( $data as $item ) {
 			$dataMap[ $item->contentClassAttributeIdentifier() ] = $item;

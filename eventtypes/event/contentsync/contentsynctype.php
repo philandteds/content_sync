@@ -45,7 +45,6 @@ class ContentSyncType extends eZWorkflowEventType
 
 		// content_removelocation operation has no object_id parameter
 		if( $parameters['module_function'] == 'removelocation' ) {
-			var_dump( eZContentObjectTreeNode::fetch( 20961 )  ); exit();
 			$object = eZContentObject::fetch( eZHTTPTool::instance()->postVariable( 'ContentObjectID' ) );
 		} else {
 			$object = eZContentObject::fetch( $parameters['object_id'] );
@@ -61,10 +60,10 @@ class ContentSyncType extends eZWorkflowEventType
 		return eZWorkflowType::STATUS_ACCEPTED;
 	}
 
-	public static function getObjectsToSync( eZContentObject $object, $version = null ) {
+	public static function getObjectsToSync( eZContentObject $object, $version = null, $language = null ) {
 		$syncHander = ContentSyncSerializeBase::get( $object );
 		if( $syncHander instanceof ContentSyncSerializeBase ) {
-			return $syncHander->getObjectsToSync( $object, $version );
+			return $syncHander->getObjectsToSync( $object, $version, $language );
 		}
 	}
 
@@ -80,7 +79,8 @@ class ContentSyncType extends eZWorkflowEventType
 			$event,
 			$objectData,
 			$object->attribute( 'id' ),
-			$version->attribute( 'version' )
+			$version->attribute( 'version' ),
+			ContentSyncSerializeBase::getVersionLanguage( $version )
 		);
 	}
 
@@ -125,7 +125,7 @@ class ContentSyncType extends eZWorkflowEventType
 		);
 	}
 
-	protected static function sendRequest( $event, $request, $objectID, $version ) {
+	protected static function sendRequest( $event, $request, $objectID, $version, $language = null ) {
 		$data = array(
 			'request' => $request
 		);
@@ -151,6 +151,7 @@ class ContentSyncType extends eZWorkflowEventType
 		$log = new ContentSyncLogRequest();
 		$log->setAttribute( 'object_id', $objectID );
 		$log->setAttribute( 'object_version', $version );
+		$log->setAttribute( 'object_version_language', $language );
 		$log->setAttribute( 'object_data', $request );
 		$log->setAttribute( 'url', $info['url'] );
 		$log->setAttribute( 'response_status', $info['http_code'] );

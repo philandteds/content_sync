@@ -118,21 +118,15 @@ foreach( $clasIdentifiers as $clasIdentifier ) {
 			continue;
 		}
 
-		$versions  = array();
-		$languages = $object->attribute( 'available_languages' );
+		$languages     = $object->attribute( 'current' )->translations( false );
+		$versionNumber = $object->attribute( 'current_version' );
 		foreach( $languages as $language ) {
-			$version = ContentSyncImport::getLatestTranslatedVersion( $object->attribute( 'id' ), $language );
-			if( $version instanceof eZContentObjectVersion ) {
-				$versions[] = $version->attribute( 'version' );
-			}
-		}
-
-		foreach( $versions as $versionNumber ) {
-			$objectsToSync = ContentSyncType::getObjectsToSync( $object, $versionNumber );
+			$objectsToSync = ContentSyncType::getObjectsToSync( $object, $versionNumber, $language );
 			foreach( $objectsToSync as $info ) {
 				ContentSyncType::requestContentSync( $info['object'], $info['version'], $events[0] );
 			}
 		}
+		exit();
 	}
 }
 

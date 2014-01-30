@@ -22,7 +22,7 @@
 			</div>
 			<div class="block">
 				<label>{'Version'|i18n( 'extension/content_sync' )}:</label>
-				{if $log.object}<a href="{concat( '/content/versionview/', $log.object_id, '/', $log.object_version, '/', $log.version.initial_language.locale )|ezurl( 'no' )}" target="_blank">{$log.object_version} ({$log.version.initial_language.locale})</a>{else}{$log.object_version}{/if}
+				{if $log.object}<a href="{concat( '/content/versionview/', $log.object_id, '/', $log.object_version, '/', $log.object_version_language )|ezurl( 'no' )}" target="_blank">{$log.object_version} ({$log.object_version_language})</a>{else}{$log.object_version} ({$log.object_version_language}){/if}
 			</div>
 			<div class="block">
 				<label>{'Object data'|i18n( 'extension/content_sync' )}:</label>

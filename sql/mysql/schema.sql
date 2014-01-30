@@ -3,6 +3,7 @@ CREATE TABLE `content_sync_log_request` (
   `id` int(11) unsigned NOT NULL auto_increment,
   `object_id` int(11) unsigned NOT NULL,
   `object_version` int(11) unsigned NOT NULL,
+  `object_version_language` CHAR(6) DEFAULT NULL,
   `object_data` TEXT DEFAULT NULL,
   `url` varchar(255) DEFAULT NULL,
   `response_status` INT(3) UNSIGNED NOT NULL DEFAULT 0,

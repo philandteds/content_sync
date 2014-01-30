@@ -29,6 +29,12 @@ class ContentSyncLogRequest extends ContentSyncLog
 					'default'  => 0,
 					'required' => true
 				),
+				'object_version_language' => array(
+					'name'     => 'ObjectVersionLanguage',
+					'datatype' => 'string',
+					'default'  => '',
+					'required' => false
+				),
 				'object_data' => array(
 					'name'     => 'ObjectData',
 					'datatype' => 'string',
