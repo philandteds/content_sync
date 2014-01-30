@@ -62,10 +62,11 @@ abstract class ContentSyncImportHandlerBase
 
 	/**
 	 * @param array[SimpleXMLElement] $attributes
+	 * @param string $uniqueID
 	 * @param eZContentObjectVersion $existingVerion
 	 * @return array
 	 */
-	public function processAttributes( array $attributes, eZContentObjectVersion $existingVerion = null ) {
+	public function processAttributes( array $attributes, $uniqueID, eZContentObjectVersion $existingVerion = null ) {
 		return array();
 	}
 

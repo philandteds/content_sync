@@ -57,8 +57,9 @@ class ContentSyncImportHandlerXrowProduct extends ContentSyncImportHandlereRPBas
 		return null;
 	}
 
-	public function processAttributes( array $attributes, eZContentObjectVersion $existingVerion = null ) {
+	public function processAttributes( array $attributes, $uniqueID, eZContentObjectVersion $existingVerion = null ) {
 		$return = $this->processSimpleAttributes( $attributes );
+		$object = $this->fetchObject( $uniqueID );
 
 		foreach( $attributes as $attribute ) {
 			$identifier = (string) $attribute['identifier'];
@@ -81,7 +82,7 @@ class ContentSyncImportHandlerXrowProduct extends ContentSyncImportHandlereRPBas
 				$return[ $identifier ] = $this->processRealtedImagesAttributeCustom(
 					$attribute,
 					self::getImagesContainerNode(),
-					$existingVerion
+					$object
 				);
 				continue;
 			}
@@ -190,12 +191,12 @@ class ContentSyncImportHandlerXrowProduct extends ContentSyncImportHandlereRPBas
 	protected function processRealtedImagesAttributeCustom(
 		SimpleXMLElement $attribute,
 		eZContentObjectTreeNode $imagesContainer,
-		eZContentObjectVersion $version = null
+		eZContentObject $object = null
 	) {
 		$return      = array();
 		$imageHashes = array();
-		if( $version instanceof eZContentObjectVersion ) {
-			$imageHashes = static::getExistingImageHashes( $version, (string) $attribute['identifier'] );
+		if( $object instanceof eZContentObject ) {
+			$imageHashes = static::getExistingImageHashes( $object, (string) $attribute['identifier'] );
 		}
 
 		foreach( $attribute->image as $image ) {

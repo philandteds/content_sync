@@ -138,12 +138,12 @@ class ContentSyncImportHandlereRPBase extends ContentSyncImportHandlerBase
 	protected static function processRealtedImagesAttribute(
 		SimpleXMLElement $attribute,
 		eZContentObjectTreeNode $imagesContainer,
-		eZContentObjectVersion $version = null
+		eZContentObject $object = null
 	) {
 		$return      = array();
 		$imageHashes = array();
-		if( $version instanceof eZContentObjectVersion ) {
-			$imageHashes = static::getExistingImageHashes( $version, (string) $attribute['identifier'] );
+		if( $object instanceof eZContentObject ) {
+			$imageHashes = static::getExistingImageHashes( $object, (string) $attribute['identifier'] );
 		}
 
 		foreach( $attribute->image as $image ) {
@@ -176,36 +176,48 @@ class ContentSyncImportHandlereRPBase extends ContentSyncImportHandlerBase
 		return implode( $return, '-' );
 	}
 
-	protected static function getExistingImageHashes( eZContentObjectVersion $version, $attr ) {
+	protected static function getExistingImageHashes( eZContentObject $object, $attr ) {
 		$hashes  = array();
-		$dataMap = $version->attribute( 'data_map' );
+		$dataMap = $object->attribute( 'data_map' );
 		if( isset( $dataMap[ $attr ] ) === false ) {
 			return $hashes;
 		}
 
-		$imageAttribute = $dataMap[ $attr ];
-		switch( $imageAttribute->attribute( 'data_type_string' ) ) {
-			case eZObjectRelationType::DATA_TYPE_STRING: {
-				$existingImages = array( $imageAttribute->attribute( 'content' ) );
-				break;
-			}
-			case eZObjectRelationListType::DATA_TYPE_STRING: {
-				$relations      = $imageAttribute->attribute( 'content' );
-				$relations      = $relations['relation_list'];
-				$existingImages = array();
-				foreach( $relations as $relation ) {
-					$image = eZContentObject::fetch( $relation['contentobject_id'] );
-					if( $image instanceof eZContentObject === false ) {
-						continue;
+		$currentVersion = $object->attribute( 'current' );
+		if( $currentVersion instanceof eZContentObjectVersion === false ) {
+			return $hashes;
+		}
+
+		$existingImages = array();
+		$languages      = $currentVersion->translations( false );
+		foreach( $languages as $language ) {
+			$currentVersion->resetDataMap();
+			$currentVersion->CurrentLanguage = $language;
+			$dataMap = $currentVersion->attribute( 'data_map' );
+
+			$imageAttribute = $dataMap[ $attr ];
+			switch( $imageAttribute->attribute( 'data_type_string' ) ) {
+				case eZObjectRelationType::DATA_TYPE_STRING: {
+					$existingImages[] = $imageAttribute->attribute( 'content' );
+					break;
+				}
+				case eZObjectRelationListType::DATA_TYPE_STRING: {
+					$relations      = $imageAttribute->attribute( 'content' );
+					$relations      = $relations['relation_list'];
+					foreach( $relations as $relation ) {
+						$image = eZContentObject::fetch( $relation['contentobject_id'] );
+						if( $image instanceof eZContentObject === false ) {
+							continue;
+						}
+
+						$existingImages[] = $image;
 					}
 
-					$existingImages[] = $image;
+					break;
 				}
-
-				break;
+				default:
+					return $hashes;
 			}
-			default:
-				return $hashes;
 		}
 
 		foreach( $existingImages as $image ) {

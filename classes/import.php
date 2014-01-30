@@ -145,7 +145,7 @@ class ContentSyncImport
 		$attributes = $xml->xpath( '/object/attributes/attribute' );
 
 		$existingVerion = $this->getExisitingObjectVersion();
-		$this->objectData['attributes'] = $this->handler->processAttributes( $attributes, $existingVerion );
+		$this->objectData['attributes'] = $this->handler->processAttributes( $attributes, $this->objectData['unique_id'], $existingVerion );
 
 		unset( $xml );
 	}

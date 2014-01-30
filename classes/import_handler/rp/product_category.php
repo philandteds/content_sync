@@ -47,8 +47,9 @@ class ContentSyncImportHandlerProductCategory extends ContentSyncImportHandlereR
 		return null;
 	}
 
-	public function processAttributes( array $attributes, eZContentObjectVersion $existingVerion = null ) {
+	public function processAttributes( array $attributes, $uniqueID, eZContentObjectVersion $existingVerion = null ) {
 		$return = $this->processSimpleAttributes( $attributes );
+		$object = $this->fetchObject( $uniqueID );
 
 		// Image attriubte
 		foreach( $attributes as $attribute ) {
@@ -57,7 +58,7 @@ class ContentSyncImportHandlerProductCategory extends ContentSyncImportHandlereR
 				$return[ $identifier ] = self::processRealtedImagesAttribute(
 					$attribute,
 					self::getImagesContainerNode(),
-					$existingVerion
+					$object
 				);
 				break;
 			}
