@@ -130,6 +130,13 @@ class ContentSyncSerializeXrowProduct extends ContentSyncSerializePTBase
 
 	public static function getIdentifier( eZContentObjectVersion $version ) {
 		$dataMap = $version->attribute( 'data_map' );
+		if(
+			isset( $dataMap['product_id'] ) === false
+			|| isset( $dataMap['version'] ) === false
+		) {
+			return null;
+		}
+
 		return $dataMap['product_id']->attribute( 'content' ) . '|' . $dataMap['version']->attribute( 'content' );
 	}
 
