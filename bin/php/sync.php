@@ -126,7 +126,6 @@ foreach( $clasIdentifiers as $clasIdentifier ) {
 				ContentSyncType::requestContentSync( $info['object'], $info['version'], $events[0] );
 			}
 		}
-		exit();
 	}
 }
 
