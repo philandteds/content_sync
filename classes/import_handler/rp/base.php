@@ -294,12 +294,29 @@ class ContentSyncImportHandlereRPBase extends ContentSyncImportHandlerBase
 
 	public function import( array $objectData, eZContentObjectVersion $existingVersion = null ) {
 		$object = $this->fetchObject( $objectData['unique_id'] );
+
+		$objectData = $this->processSkipAttributes( $objectData );
+
 		if( $object instanceof eZContentObject === false ) {
 			return $this->createObject( $objectData );
 		} else {
 			return $this->updateObject( $objectData, $object, $existingVersion );
 		}
 		return $result;
+	}
+
+        protected function processSkipAttributes( array $objectData ) {
+		$skipAttributes = (array) eZINI::instance( 'content_sync.ini' )->variable( 'Import', 'SkipAttributes' );
+		$attributes     = $objectData['attributes'];
+		$type           = $objectData['type'];
+		foreach( $attributes as $identifier => $value ) {
+ 			if( in_array( $type . '/' . $identifier, $skipAttributes ) ) {
+				unset( $attributes[ $identifier ] );
+			}
+		}
+
+		$objectData['attributes'] = $attributes;
+		return $objectData;
 	}
 
 	protected function createObject( array $objectData ) {

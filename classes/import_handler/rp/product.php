@@ -17,9 +17,9 @@ class ContentSyncImportHandlerXrowProduct extends ContentSyncImportHandlereRPBas
 		'version',
 		'product_name',
 		'xrow_prod_desc',
-		//'short_description',
-		//'description',
-		//'video',
+		'short_description',
+		'description',
+		'video',
 		'hide_product',
 		'tags',
 		'brand',
@@ -90,7 +90,7 @@ class ContentSyncImportHandlerXrowProduct extends ContentSyncImportHandlereRPBas
 			// Required related products and Optional related products
 			if(
 				$identifier === 'required_related_products'
-				//|| $identifier === 'optional_related_products'
+				|| $identifier === 'optional_related_products'
 			) {
 				$return[ $identifier ] = self::processRelatedProducts( $attribute );
 				continue;
