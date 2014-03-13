@@ -37,6 +37,7 @@ class ContentSyncSerializeXrowProduct extends ContentSyncSerializePTBase {
         $request = $doc->createElement( 'object' );
         $request->setAttribute( 'unique_id', self::getIdentifier( $version ) );
         $request->setAttribute( 'language', $language );
+        $request->setAttribute( 'is_main_translation', (int) self::isMainTranslation( $object, $version ) );
         $request->setAttribute( 'type', self::$classIdentifier );
         $doc->appendChild( $request );
 
@@ -141,8 +142,7 @@ class ContentSyncSerializeXrowProduct extends ContentSyncSerializePTBase {
     public static function getIdentifier( eZContentObjectVersion $version ) {
         $dataMap = $version->attribute( 'data_map' );
         if(
-            isset( $dataMap['product_id'] ) === false
-            || isset( $dataMap['version'] ) === false
+            isset( $dataMap['product_id'] ) === false || isset( $dataMap['version'] ) === false
         ) {
             return null;
         }
@@ -157,8 +157,8 @@ class ContentSyncSerializeXrowProduct extends ContentSyncSerializePTBase {
         foreach( $relatedProducts['relation_list'] as $relation ) {
             $relatedProduct = eZContentObject::fetch( $relation['contentobject_id'] );
             if(
-                $relatedProduct instanceof eZContentObject === false
-                || $relatedProduct->attribute( 'class_identifier' ) != self::$classIdentifier
+                $relatedProduct instanceof eZContentObject === false || $relatedProduct->attribute( 'class_identifier' )
+                != self::$classIdentifier
             ) {
                 continue;
             }

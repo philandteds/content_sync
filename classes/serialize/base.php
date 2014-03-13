@@ -1,106 +1,105 @@
 <?php
+
 /**
  * @package ContentSync
  * @class   ContentSyncSerializeBase
  * @author  Serhey Dolgushev <dolgushev.serhey@gmail.com>
  * @date    17 Jan 2014
- **/
+ * */
+abstract class ContentSyncSerializeBase {
 
-abstract class ContentSyncSerializeBase
-{
-	protected static $instances	 = array();
-	public static $classIdentifier = null;
+    protected static $instances    = array();
+    public static $classIdentifier = null;
 
-	/**
-	 * Recieves the content object and returns it`serializer
-	 * @param eZContentObject $object
-	 * @return ContentSyncSerializeBase|null
-	 */
-	public final static function get( eZContentObject $object ) {
-		$className = 'ContentSyncSerialize' . self::toCamelCase( $object->attribute( 'class_identifier' ) );
-		if( class_exists( $className ) === false ) {
-			return null;
-		}
+    /**
+     * Recieves the content object and returns it`serializer
+     * @param eZContentObject $object
+     * @return ContentSyncSerializeBase|null
+     */
+    public final static function get( eZContentObject $object ) {
+        $className = 'ContentSyncSerialize' . self::toCamelCase( $object->attribute( 'class_identifier' ) );
+        if( class_exists( $className ) === false ) {
+            return null;
+        }
 
-		$reflector = new ReflectionClass( $className );
-		if( $reflector->isSubclassOf( __CLASS__ ) === false ) {
-			return null;
-		}
+        $reflector = new ReflectionClass( $className );
+        if( $reflector->isSubclassOf( __CLASS__ ) === false ) {
+            return null;
+        }
 
-		return call_user_func( array( $className, 'getInstance' ) );
-	}
+        return call_user_func( array( $className, 'getInstance' ) );
+    }
 
-	/**
-	 * Transforms the string to camel case
-	 * @param string $str
-	 * @return string
-	 */
-	protected final static function toCamelCase( $str ) {
-		return str_replace( ' ', '', ucwords( str_replace( '_', ' ', $str ) ) );
-	}
+    /**
+     * Transforms the string to camel case
+     * @param string $str
+     * @return string
+     */
+    protected final static function toCamelCase( $str ) {
+        return str_replace( ' ', '', ucwords( str_replace( '_', ' ', $str ) ) );
+    }
 
-	/**
-	 * Single instance of called class
-	 * @return static
-	 */
-	public final static function getInstance() {
-		$class = get_called_class();
-		if( isset( self::$instances[ $class ] ) === false ) {
-			self::$instances[ $class ] = new $class;
-		}
+    /**
+     * Single instance of called class
+     * @return static
+     */
+    public final static function getInstance() {
+        $class = get_called_class();
+        if( isset( self::$instances[$class] ) === false ) {
+            self::$instances[$class] = new $class;
+        }
 
-		return self::$instances[ $class ];
-	}
+        return self::$instances[$class];
+    }
 
-	/**
-	 * Recieves the content object, and returns the data for objects which should by synced
-	 * @param eZContentObject $object
-	 * @param int $versionNumber
-	 * @param string $language
-	 * @return array The list of content objects with version
-	 */
-	public function getObjectsToSync( eZContentObject $object, $versionNumber = null, $language = null ) {
-		$version = $versionNumber === null ? $object->attribute( 'current' ) : $object->version( $versionNumber );
-		if( $language !== null ) {
-			$version->resetDataMap();
-			$version->CurrentLanguage = $language;
-		}
+    /**
+     * Recieves the content object, and returns the data for objects which should by synced
+     * @param eZContentObject $object
+     * @param int $versionNumber
+     * @param string $language
+     * @return array The list of content objects with version
+     */
+    public function getObjectsToSync( eZContentObject $object, $versionNumber = null, $language = null ) {
+        $version = $versionNumber === null ? $object->attribute( 'current' ) : $object->version( $versionNumber );
+        if( $language !== null ) {
+            $version->resetDataMap();
+            $version->CurrentLanguage = $language;
+        }
 
-		return array(
-			array(
-				'object'  => $object,
-				'version' => $version
-			)
-		);
-	}
+        return array(
+            array(
+                'object'  => $object,
+                'version' => $version
+            )
+        );
+    }
 
-	/**
-	 * Returns object data XML, which will be sent as content sync request
-	 * @param eZContentObject $object
-	 * @param eZContentObjectVersion $version
-	 * @return string Object data XML
-	 */
-	public function getObjectData( eZContentObject $object, eZContentObjectVersion $version ) {
-		return '<request></request>';
-	}
+    /**
+     * Returns object data XML, which will be sent as content sync request
+     * @param eZContentObject $object
+     * @param eZContentObjectVersion $version
+     * @return string Object data XML
+     */
+    public function getObjectData( eZContentObject $object, eZContentObjectVersion $version ) {
+        return '<request></request>';
+    }
 
-	/**
-	 * Returns object data XML, which will be sent as content sync remove request
-	 * No content sync request will be sent, if this method returns null
-	 * @param eZContentObject $object
-	 * @return string|null Object data XML
-	 */
-	public function getRemoveObjectData( eZContentObject $object ) {
-		return '<request operation="remove"></request>';
-	}
+    /**
+     * Returns object data XML, which will be sent as content sync remove request
+     * No content sync request will be sent, if this method returns null
+     * @param eZContentObject $object
+     * @return string|null Object data XML
+     */
+    public function getRemoveObjectData( eZContentObject $object ) {
+        return '<request operation="remove"></request>';
+    }
 
-	/**
-	 * @param eZContentObjectVersion $version
-	 * @return string Language
-	 */
-	public static function getVersionLanguage( eZContentObjectVersion $version  ) {
-		return $version->CurrentLanguage
-			? $version->CurrentLanguage
-			: $version->attribute( 'initial_language' )->attribute( 'locale' );
-	}
+    /**
+     * @param eZContentObjectVersion $version
+     * @return string Language
+     */
+    public static function getVersionLanguage( eZContentObjectVersion $version ) {
+        return $version->CurrentLanguage ? $version->CurrentLanguage : $version->attribute( 'initial_language' )->attribute( 'locale' );
+    }
+
 }
