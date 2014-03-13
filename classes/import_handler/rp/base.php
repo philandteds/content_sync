@@ -353,9 +353,7 @@ class ContentSyncImportHandlereRPBase extends ContentSyncImportHandlerBase {
         return $result;
     }
 
-    protected function updateObject(
-    array $objectData, eZContentObject $object
-    ) {
+    protected function updateObject( array $objectData, eZContentObject $object ) {
         $result = array(
             'object_id'      => null,
             'object_version' => null,
@@ -376,6 +374,12 @@ class ContentSyncImportHandlereRPBase extends ContentSyncImportHandlerBase {
             throw new Exception( 'Object update error' );
         }
 
+        if( $object->attribute( 'initial_language_id' ) != $newVersion->attribute( 'initial_language_id' ) ) {
+            eZContentOperationCollection::updateInitialLanguage( $object->attribute( 'id' ), $newVersion->attribute( 'initial_language_id' ) );
+
+            $message = $objectData['language'] . ' translation is set as main';
+            ContentSyncImport::addLogtMessage( $message );
+        }
 
         $newParentNodeIDs = array();
         foreach( $objectData['locations'] as $node ) {

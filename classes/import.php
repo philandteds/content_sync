@@ -13,11 +13,12 @@ class ContentSyncImport {
     protected $handler            = null;
     protected $DOMDocument        = null;
     protected $objectData         = array(
-        'unique_id'  => null,
-        'language'   => null,
-        'type'       => null,
-        'attributes' => array(),
-        'locations'  => array()
+        'unique_id'           => null,
+        'language'            => null,
+        'type'                => null,
+        'is_main_translation' => null,
+        'attributes'          => array(),
+        'locations'           => array()
     );
 
     /**
@@ -114,6 +115,8 @@ class ContentSyncImport {
 
             $this->objectData[$attr] = $object->getAttribute( $attr );
         }
+
+        $this->objectData['is_main_translation'] = (bool) $this->objectData['is_main_translation'];
     }
 
     private function validateObjectData() {
