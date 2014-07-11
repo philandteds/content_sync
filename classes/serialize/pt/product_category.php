@@ -84,4 +84,13 @@ class ContentSyncSerializeProductCategory extends ContentSyncSerializePTBase {
         return $doc->saveXML();
     }
 
+    public static function getIdentifier( eZContentObjectVersion $version ) {
+        $dataMap = $version->attribute( 'data_map' );
+        if( isset( $dataMap['identifier'] ) === false ) {
+            return null;
+        }
+
+        return $dataMap['identifier']->attribute( 'content' );
+    }
+
 }
