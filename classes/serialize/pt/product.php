@@ -147,7 +147,13 @@ class ContentSyncSerializeXrowProduct extends ContentSyncSerializePTBase {
             return null;
         }
 
-        return $dataMap['product_id']->attribute( 'content' ) . '|' . $dataMap['version']->attribute( 'content' );
+        $uniqueID = $dataMap['product_id']->attribute( 'content' ) . '|' . $dataMap['version']->attribute( 'content' );
+
+        if( $uniqueID === '|' && isset( $dataMap['name'] ) ) {
+            $uniqueID = 'NAME#' . trim( $dataMap['name']->attribute( 'content' ) );
+        }
+
+        return $uniqueID;
     }
 
     protected static function getRelatedProductsNode( $doc, eZContentObjectAttribute $attribute ) {

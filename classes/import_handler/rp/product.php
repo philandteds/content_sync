@@ -31,6 +31,39 @@ class ContentSyncImportHandlerXrowProduct extends ContentSyncImportHandlereRPBas
     protected $relatedImageHashes                 = array();
 
     public static function fetchNode( $uniqueID ) {
+        if( strpos( $uniqueID, 'NAME#' ) !== false ) {
+            return self::fetchNodeByName( $uniqueID );
+        } else {
+            return self::fetchNodeByProductNumberAndVersion( $uniqueID );
+        }
+    }
+
+    protected static function fetchNodeByName( $uniqueID ) {
+        $name        = str_replace( 'NAME#', '', $uniqueID );
+        $class       = ContentSyncSerializeXrowProduct::$classIdentifier;
+        $fetchParams = array(
+            'Depth'            => false,
+            'Limitation'       => array(),
+            'LoadDataMap'      => false,
+            'AsObject'         => true,
+            'IgnoreVisibility' => true,
+            'MainNodeOnly'     => true,
+            'ClassFilterType'  => 'include',
+            'ClassFilterArray' => array( $class ),
+            'AttributeFilter'  => array(
+                array( $class . '/name', '=', $name )
+            )
+        );
+
+        $nodes = eZContentObjectTreeNode::subTreeByNodeID( $fetchParams, 1 );
+        if( count( $nodes ) > 0 ) {
+            return $nodes[0];
+        }
+
+        return null;
+    }
+
+    protected static function fetchNodeByProductNumberAndVersion( $uniqueID ) {
         $parts       = explode( '|', $uniqueID );
         $class       = ContentSyncSerializeXrowProduct::$classIdentifier;
         $fetchParams = array(
