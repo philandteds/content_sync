@@ -10,6 +10,7 @@ class ContentSyncSerializePTBase extends ContentSyncSerializeBase {
 
     public static $classIdentifier   = null;
     public static $skipSyncAttribute = 'disable_content_sync';
+    protected static $syncAttrs      = array();
 
     public function getObjectsToSync( eZContentObject $object, $versionNumber = null, $language = null ) {
         $version = $versionNumber === null ? $object->attribute( 'current' ) : $object->version( $versionNumber );
@@ -141,6 +142,14 @@ class ContentSyncSerializePTBase extends ContentSyncSerializeBase {
         $doc->appendChild( $request );
 
         return $doc->saveXML();
+    }
+
+    public function getSyncAttrs() {
+        return static::$syncAttrs;
+    }
+
+    public function setSyncAttrs( $syncAttrs ) {
+        static::$syncAttrs = $syncAttrs;
     }
 
 }

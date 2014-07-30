@@ -9,6 +9,19 @@
 class ContentSyncSerializeProductCategory extends ContentSyncSerializePTBase {
 
     public static $classIdentifier = 'product_category';
+    protected static $syncAttrs    = array(
+        'name',
+        'short_name',
+        'description',
+        'category_message',
+        'identifier',
+        'tags',
+        'xrow_prod_desc',
+        'show_in_main_menu',
+        'show_in_products_menu',
+        'parent_category_identifier',
+        'image'
+    );
 
     public function getObjectData( eZContentObject $object, eZContentObjectVersion $version ) {
         $dataMap    = self::fetchObjectDataMap( $object, $version );
@@ -52,8 +65,9 @@ class ContentSyncSerializeProductCategory extends ContentSyncSerializePTBase {
         }
         $request->appendChild( $locations );
 
+        $syncAttrs   = $this->getSyncAttrs();
         // Content attributes
-        $syncAttrs  = array(
+        $simpleAttrs = array(
             'name',
             'short_name',
             'description',
@@ -65,8 +79,12 @@ class ContentSyncSerializeProductCategory extends ContentSyncSerializePTBase {
             'show_in_products_menu',
             'parent_category_identifier'
         );
-        $attributes = $doc->createElement( 'attributes' );
-        foreach( $syncAttrs as $attrIdentifier ) {
+        $attributes  = $doc->createElement( 'attributes' );
+        foreach( $simpleAttrs as $attrIdentifier ) {
+            if( in_array( $attrIdentifier, $syncAttrs ) === false ) {
+                continue;
+            }
+
             $value = null;
             if( isset( $dataMap[$attrIdentifier] ) ) {
                 $value = $dataMap[$attrIdentifier]->toString();
@@ -76,8 +94,10 @@ class ContentSyncSerializeProductCategory extends ContentSyncSerializePTBase {
         }
 
         // Image
-        $image = self::getImageNode( $doc, $dataMap['image']->attribute( 'content' ) );
-        $attributes->appendChild( self::createAttributeNode( $doc, 'image', $image ) );
+        if( in_array( 'image', $syncAttrs ) ) {
+            $image = self::getImageNode( $doc, $dataMap['image']->attribute( 'content' ) );
+            $attributes->appendChild( self::createAttributeNode( $doc, 'image', $image ) );
+        }
 
         $request->appendChild( $attributes );
 

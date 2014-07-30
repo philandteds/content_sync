@@ -9,6 +9,28 @@
 class ContentSyncSerializeXrowProduct extends ContentSyncSerializePTBase {
 
     public static $classIdentifier = 'xrow_product';
+    protected static $syncAttrs    = array(
+        'name',
+        'product_id',
+        'version',
+        'product_name',
+        'xrow_prod_desc',
+        'short_description',
+        'description',
+        'video',
+        'hide_product',
+        'tags',
+        'brand',
+        'display_in_websites',
+        'parent_category_identifiers',
+        'xrow_logo',
+        'image',
+        'images',
+        'required_related_products',
+        'optional_related_products',
+        'colour_image_map',
+        'product_complex_link'
+    );
 
     public function getObjectsToSync( eZContentObject $object, $versionNumber = null, $language = null ) {
         $nodes = $object->assignedNodes();
@@ -73,8 +95,9 @@ class ContentSyncSerializeXrowProduct extends ContentSyncSerializePTBase {
 
         $request->appendChild( $locations );
 
+        $syncAttrs   = $this->getSyncAttrs();
         // Content attributes
-        $syncAttrs  = array(
+        $simpleAttrs = array(
             'name',
             'product_id',
             'version',
@@ -89,8 +112,12 @@ class ContentSyncSerializeXrowProduct extends ContentSyncSerializePTBase {
             'display_in_websites',
             'parent_category_identifiers'
         );
-        $attributes = $doc->createElement( 'attributes' );
-        foreach( $syncAttrs as $attrIdentifier ) {
+        $attributes  = $doc->createElement( 'attributes' );
+        foreach( $simpleAttrs as $attrIdentifier ) {
+            if( in_array( $attrIdentifier, $syncAttrs ) === false ) {
+                continue;
+            }
+
             $value = null;
             if( isset( $dataMap[$attrIdentifier] ) ) {
                 $value = $dataMap[$attrIdentifier]->toString();
@@ -100,39 +127,49 @@ class ContentSyncSerializeXrowProduct extends ContentSyncSerializePTBase {
         }
 
         // Logo
-        $image         = self::getImageFileNode( $doc, $dataMap['xrow_logo']->attribute( 'content' ) );
-        $attributes->appendChild( self::createAttributeNode( $doc, 'xrow_logo', $image ) );
-        // Shop homepage image
-        $image         = self::getImageNode( $doc, $dataMap['image']->attribute( 'content' ) );
-        $attributes->appendChild( self::createAttributeNode( $doc, 'image', $image ) );
-        // Images
-        $images        = self::createAttributeNode( $doc, 'images', null );
-        $relatedImages = $dataMap['images']->attribute( 'content' );
-        foreach( $relatedImages['relation_list'] as $relation ) {
-            $image = eZContentObject::fetch( $relation['contentobject_id'] );
-            if( $image instanceof eZContentObject === false ) {
-                continue;
-            }
-            //$images->appendChild( self::getImageNode( $doc, $image, $relation['contentobject_version'] ) );
-            $images->appendChild( self::getImageNode( $doc, $image ) );
+        if( in_array( 'xrow_logo', $syncAttrs ) ) {
+            $image = self::getImageFileNode( $doc, $dataMap['xrow_logo']->attribute( 'content' ) );
+            $attributes->appendChild( self::createAttributeNode( $doc, 'xrow_logo', $image ) );
         }
-        $attributes->appendChild( $images );
-
+        // Shop homepage image
+        if( in_array( 'image', $syncAttrs ) ) {
+            $image = self::getImageNode( $doc, $dataMap['image']->attribute( 'content' ) );
+            $attributes->appendChild( self::createAttributeNode( $doc, 'image', $image ) );
+        }
+        // Images
+        if( in_array( 'images', $syncAttrs ) ) {
+            $images        = self::createAttributeNode( $doc, 'images', null );
+            $relatedImages = $dataMap['images']->attribute( 'content' );
+            foreach( $relatedImages['relation_list'] as $relation ) {
+                $image = eZContentObject::fetch( $relation['contentobject_id'] );
+                if( $image instanceof eZContentObject === false ) {
+                    continue;
+                }
+                //$images->appendChild( self::getImageNode( $doc, $image, $relation['contentobject_version'] ) );
+                $images->appendChild( self::getImageNode( $doc, $image ) );
+            }
+            $attributes->appendChild( $images );
+        }
         // Required related products
-        $requiredlProducts = self::getRelatedProductsNode( $doc, $dataMap['required_related_products'] );
-        $attributes->appendChild( $requiredlProducts );
-
+        if( in_array( 'required_related_products', $syncAttrs ) ) {
+            $requiredlProducts = self::getRelatedProductsNode( $doc, $dataMap['required_related_products'] );
+            $attributes->appendChild( $requiredlProducts );
+        }
         // Optional related products
-        $optionalProducts = self::getRelatedProductsNode( $doc, $dataMap['optional_related_products'] );
-        $attributes->appendChild( $optionalProducts );
-
+        if( in_array( 'optional_related_products', $syncAttrs ) ) {
+            $optionalProducts = self::getRelatedProductsNode( $doc, $dataMap['optional_related_products'] );
+            $attributes->appendChild( $optionalProducts );
+        }
         // Colour image map
-        $colourMap = self::getColourMapNode( $doc, $dataMap['colour_image_map'] );
-        $attributes->appendChild( $colourMap );
-
+        if( in_array( 'colour_image_map', $syncAttrs ) ) {
+            $colourMap = self::getColourMapNode( $doc, $dataMap['colour_image_map'] );
+            $attributes->appendChild( $colourMap );
+        }
         // Product page link
-        $productURL = self::getTranslatedProductURLNode( $doc, $dataMap['product_complex_link'], $language );
-        $attributes->appendChild( $productURL );
+        if( in_array( 'product_complex_link', $syncAttrs ) ) {
+            $productURL = self::getTranslatedProductURLNode( $doc, $dataMap['product_complex_link'], $language );
+            $attributes->appendChild( $productURL );
+        }
 
         $request->appendChild( $attributes );
 
