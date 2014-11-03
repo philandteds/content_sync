@@ -79,6 +79,12 @@ class ContentSyncSerializeProductCategory extends ContentSyncSerializePTBase {
         $image = self::getImageNode( $doc, $dataMap['image']->attribute( 'content' ) );
         $attributes->appendChild( self::createAttributeNode( $doc, 'image', $image ) );
 
+        // Tags
+        if( isset( $dataMap['search_tags'] ) ) {
+            $tags = self::getTagsNode( $doc, $dataMap['search_tags'], $language );
+            $attributes->appendChild( self::createAttributeNode( $doc, 'search_tags', $tags ) );
+        }
+
         $request->appendChild( $attributes );
 
         return $doc->saveXML();

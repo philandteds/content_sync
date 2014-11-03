@@ -134,6 +134,12 @@ class ContentSyncSerializeXrowProduct extends ContentSyncSerializePTBase {
         $productURL = self::getTranslatedProductURLNode( $doc, $dataMap['product_complex_link'], $language );
         $attributes->appendChild( $productURL );
 
+        // Tags
+        if( isset( $dataMap['search_tags'] ) ) {
+            $tags = self::getTagsNode( $doc, $dataMap['search_tags'], $language );
+            $attributes->appendChild( self::createAttributeNode( $doc, 'search_tags', $tags ) );
+        }
+
         $request->appendChild( $attributes );
 
         return $doc->saveXML();

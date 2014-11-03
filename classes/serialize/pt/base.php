@@ -96,6 +96,74 @@ class ContentSyncSerializePTBase extends ContentSyncSerializeBase {
         return $node;
     }
 
+    public static function getTagsNode( DOMDocument $doc, eZContentObjectAttribute $attribute, $language = null ) {
+        $node = $doc->createElement( 'tags' );
+        $tags = $attribute->attribute( 'content' )->attribute( 'tags' );
+
+        foreach( $tags as $k => $tag ) {
+            $tagsPath = array( $tag );
+            while( $tag->attribute( 'parent_id' ) > 1 ) {
+                $tag = $tag->attribute( 'parent' );
+
+                // If there is at least one invalid parent, we are skipping this tag
+                if( $tag instanceof eZTagsObject === false ) {
+                    $tagsPath = array();
+                    break;
+                }
+                $tagsPath[] = $tag;
+            }
+
+            if( count( $tagsPath ) === 0 ) {
+                continue;
+            }
+
+            $tagsPath = array_reverse( $tagsPath );
+            $tag      = $tags[$k];
+            $link     = eZTagsAttributeLinkObject::fetchByObjectAttributeAndKeywordID(
+                    $attribute->attribute( 'id' ), $attribute->attribute( 'version' ), $attribute->attribute( 'contentobject_id' ), $tag->attribute( 'id' )
+            );
+
+            $tagDataElement = $doc->createElement( 'tag-data' );
+            $tagDataElement->setAttribute( 'remote_id', $tag->attribute( 'remote_id' ) );
+            $tagDataElement->setAttribute( 'priority', $link instanceof eZTagsAttributeLinkObject ? $link->attribute( 'priority' ) : 0  );
+
+            $tagPathElement = $doc->createElement( 'path' );
+            $tagDataElement->appendChild( $tagPathElement );
+            foreach( $tagsPath as $tag ) {
+                $tagElement = $doc->createElement( 'tag' );
+                $tagElement->setAttribute( 'remote_id', $tag->attribute( 'remote_id' ) );
+                $tagElement->setAttribute( 'depth', $tag->attribute( 'depth' ) );
+
+                $language = eZContentLanguage::fetch( $tag->attribute( 'main_language_id' ) );
+                $tagElement->setAttribute( 'main_language', $language instanceof eZContentLanguage ? $language->attribute( 'locale' ) : null  );
+
+                $languages = eZContentLanguage::decodeLanguageMask( $tag->attribute( 'language_mask' ), true );
+                $tagElement->setAttribute( 'always_available', (int) $languages['always_available'] );
+                $tagElement->setAttribute( 'available_languages', implode( ',', $languages['language_list'] ) );
+
+                $tagKeywordElement = $doc->createElement( 'keyword' );
+                $tagKeywordElement->appendChild( $doc->createCDATASection( $tag->Keyword ) );
+                $tagElement->appendChild( $tagKeywordElement );
+
+                $translations           = $tag->attribute( 'translations' );
+                $tagTranslationsElement = $doc->createElement( 'translations' );
+                foreach( $translations as $translation ) {
+                    $tagTranslationElement = $doc->createElement( 'translation' );
+                    $tagTranslationElement->setAttribute( 'locale', $translation->attribute( 'locale' ) );
+                    $tagTranslationElement->appendChild( $doc->createCDATASection( $translation->attribute( 'keyword' ) ) );
+                    $tagTranslationsElement->appendChild( $tagTranslationElement );
+                }
+                $tagElement->appendChild( $tagTranslationsElement );
+
+                $tagPathElement->appendChild( $tagElement );
+            }
+
+            $node->appendChild( $tagDataElement );
+        }
+
+        return $node;
+    }
+
     public static function createAttributeNode( DOMDocument $doc, $identifier, $value ) {
         $attr = $doc->createElement( 'attribute' );
         if(
