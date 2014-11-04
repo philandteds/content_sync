@@ -84,7 +84,6 @@ class ContentSyncSerializeXrowProduct extends ContentSyncSerializePTBase {
             'description',
             'video',
             'hide_product',
-            'tags',
             'brand',
             'display_in_websites',
             'parent_category_identifiers'
@@ -135,6 +134,10 @@ class ContentSyncSerializeXrowProduct extends ContentSyncSerializePTBase {
         $attributes->appendChild( $productURL );
 
         // Tags
+        $tags = self::getTagsNode( $doc, $dataMap['tags'], $language );
+        $attributes->appendChild( self::createAttributeNode( $doc, 'tags', $tags ) );
+
+        // Search tags
         if( isset( $dataMap['search_tags'] ) ) {
             $tags = self::getTagsNode( $doc, $dataMap['search_tags'], $language );
             $attributes->appendChild( self::createAttributeNode( $doc, 'search_tags', $tags ) );
@@ -169,8 +172,7 @@ class ContentSyncSerializeXrowProduct extends ContentSyncSerializePTBase {
         foreach( $relatedProducts['relation_list'] as $relation ) {
             $relatedProduct = eZContentObject::fetch( $relation['contentobject_id'] );
             if(
-                $relatedProduct instanceof eZContentObject === false || $relatedProduct->attribute( 'class_identifier' )
-                != self::$classIdentifier
+                $relatedProduct instanceof eZContentObject === false || $relatedProduct->attribute( 'class_identifier' ) != self::$classIdentifier
             ) {
                 continue;
             }
