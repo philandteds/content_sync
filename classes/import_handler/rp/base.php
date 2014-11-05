@@ -431,4 +431,157 @@ class ContentSyncImportHandlereRPBase extends ContentSyncImportHandlerBase {
         return $return;
     }
 
+    protected static function processTagsAttribute( SimpleXMLElement $attribute, eZContentObjectVersion $version = null ) {
+        if( isset( $attribute->tags ) === false ) {
+            return array();
+        }
+
+        $return = array();
+        foreach( $attribute->tags->{'tag-data'} as $tag ) {
+            if( isset( $tag->path->tag ) === false || count( $tag->path->tag ) === 0 ) {
+                // Skip tags without path
+                continue;
+            }
+
+            $tagData = array(
+                'remote_id' => (string) $tag->attributes()->remote_id,
+                'priority'  => (int) $tag->attributes()->priority,
+                'path'      => array()
+            );
+
+            foreach( $tag->path->tag as $pathTag ) {
+                if(
+                    isset( $pathTag->translations->translation ) === false || count( $pathTag->translations->translation ) === 0
+                ) {
+                    // Skip tags, if at least one path has no translations
+                    continue 2;
+                }
+
+                $pathTagData = array(
+                    'remote_id'           => (string) $pathTag->attributes()->remote_id,
+                    'main_language'       => (string) $pathTag->attributes()->main_language,
+                    'always_available'    => (int) $pathTag->attributes()->always_available,
+                    'depth'               => (int) $pathTag->attributes()->depth,
+                    'available_languages' => explode( ',', (string) $pathTag->attributes()->available_languages ),
+                    'keyword'             => (string) $pathTag->keyword,
+                    'translations'        => array()
+                );
+
+                foreach( $pathTag->translations->translation as $translation ) {
+                    if( strlen( $translation->attributes()->locale ) === 0 ) {
+                        // Skip translations without locale
+                        continue;
+                    }
+
+                    $locale                               = (string) $translation->attributes()->locale;
+                    $pathTagData['translations'][$locale] = (string) $translation;
+                }
+                $tagData['path'][] = $pathTagData;
+            }
+            $return[] = $tagData;
+        }
+
+        return $return;
+    }
+
+    protected static function handleTags( array $objectData, $attrIdentifier, $objectID, $version ) {
+        if(
+            isset( $objectData['attributes'][$attrIdentifier] ) === false || is_array( $objectData['attributes'][$attrIdentifier] ) === false
+            || count( $objectData['attributes'][$attrIdentifier] ) === 0
+        ) {
+            return;
+        }
+        $tagsData = $objectData['attributes'][$attrIdentifier];
+
+        // Fetch content object
+        $object = eZContentObject::fetch( $objectID );
+        if( $object instanceof eZContentObject === false ) {
+            return;
+        }
+
+        // Fetch content object attribute
+        $dataMap = $object->attribute( 'data_map' );
+        if( isset( $dataMap[$attrIdentifier] ) === false ) {
+            return;
+        }
+        $attr = $dataMap[$attrIdentifier];
+
+        // Remove existing tag links
+        eZTagsAttributeLinkObject::removeByAttribute( $attr->attribute( 'id' ), $version );
+
+        // Create/update parent tags and their translations
+        foreach( $tagsData as $tagData ) {
+            $parentTagID = 0;
+            foreach( $tagData['path'] as $pathTagData ) {
+                $language = eZContentLanguage::fetchByLocale( $pathTagData['main_language'] );
+                if( $language instanceof eZContentLanguage === false ) {
+                    // There is no tag's main language on this installation
+                    $message = $pathTagData['remote_id'] . '" eZTag is skipped because of missing "' . $language . '" language';
+                    ContentSyncImport::addLogtMessage( $message );
+                    continue 2;
+                }
+
+                $mask = $language->attribute( 'id' );
+                if( (bool) $pathTagData['always_available'] ) {
+                    $mask += 1;
+                }
+
+                $tag = eZTagsObject::fetchByRemoteID( $pathTagData['remote_id'] );
+                if( $tag instanceof eZTagsObject === false ) {
+                    $tag = new eZTagsObject( array( 'remote_id' => $pathTagData['remote_id'] ), $language->attribute( 'locale' ) );
+                }
+                $tag->setAttribute( 'keyword', $pathTagData['keyword'] );
+                $tag->setAttribute( 'parent_id', $parentTagID );
+                $tag->setAttribute( 'depth', $pathTagData['depth'] );
+                $tag->setAttribute( 'main_language_id', $language->attribute( 'id' ) );
+                $tag->setAttribute( 'language_mask', $mask );
+                $tag->setAttribute( 'modified', time() );
+                $tag->store();
+
+                foreach( $pathTagData['translations'] as $language => $translation ) {
+                    $language = eZContentLanguage::fetchByLocale( $language );
+                    if( $language instanceof eZContentLanguage === false ) {
+                        // There is no translation language on this installation
+                        $message = '"' . $language . '" is skipped for "' . $tag->attribute( 'remote_id' ) . '" eZTag';
+                        ContentSyncImport::addLogtMessage( $message );
+                        continue;
+                    }
+
+                    $keyword = eZTagsKeyword::fetch( $tag->attribute( 'id' ), $language->attribute( 'locale' ), true );
+                    if( $keyword instanceof eZTagsKeyword === false ) {
+                        $keyword = new eZTagsKeyword( array( 'keyword_id' => $tag->attribute( 'id' ) ) );
+                        $keyword->setAttribute( 'language_id', $language->attribute( 'id' ) );
+                        $keyword->setAttribute( 'locale', $language->attribute( 'locale' ) );
+                    }
+                    $keyword->setAttribute( 'status', eZTagsKeyword::STATUS_PUBLISHED );
+                    $keyword->setAttribute( 'keyword', $translation );
+                    $keyword->store();
+                }
+
+                $tag->updatePathString();
+                $tag->updateDepth();
+                $tag->updateLanguageMask();
+
+                $message = '"' . $tag->attribute( 'keyword' ) . '" eZTag is created/updated (remote_id: "' . $tag->attribute( 'remote_id' ) . '")';
+                ContentSyncImport::addLogtMessage( $message );
+
+                $parentTagID = $tag->attribute( 'id' );
+            }
+
+            // Link tag to object
+            $tag = eZTagsObject::fetchByRemoteID( $tagData['remote_id'] );
+            if( $tag instanceof eZTagsObject === false ) {
+                continue;
+            }
+            $linkObject = new eZTagsAttributeLinkObject( array(
+                'keyword_id'              => $tag->attribute( 'id' ),
+                'objectattribute_id'      => $attr->attribute( 'id' ),
+                'objectattribute_version' => $version,
+                'object_id'               => $object->attribute( 'id' ),
+                'priority'                => $tagData['priority'] ) );
+            $linkObject->store();
+            $tag->registerSearchObjects();
+        }
+    }
+
 }
