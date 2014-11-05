@@ -464,6 +464,7 @@ class ContentSyncImportHandlereRPBase extends ContentSyncImportHandlerBase {
                     'depth'               => (int) $pathTag->attributes()->depth,
                     'available_languages' => explode( ',', (string) $pathTag->attributes()->available_languages ),
                     'keyword'             => (string) $pathTag->keyword,
+                    'main_tag_remote_id'  => (string) $pathTag->attributes()->main_tag_remote_id,
                     'translations'        => array()
                 );
 
@@ -536,6 +537,17 @@ class ContentSyncImportHandlereRPBase extends ContentSyncImportHandlerBase {
                 $tag->setAttribute( 'main_language_id', $language->attribute( 'id' ) );
                 $tag->setAttribute( 'language_mask', $mask );
                 $tag->setAttribute( 'modified', time() );
+
+                if( $pathTagData['main_tag_remote_id'] !== 0 ) {
+                    $parentTag = eZTagsObject::fetchByRemoteID( $pathTagData['main_tag_remote_id'] );
+                    if( $parentTag instanceof eZTagsObject ) {
+                        $tag->setAttribute( 'main_tag_id', $parentTag->attribute( 'id' ) );
+                    } else {
+                        $message = 'No parent tag (remote ID:' . $pathTagData['main_tag_remote_id'] . ') can be fetched for "' . $tag->attribute( 'remote_id' ) . '" eZTag';
+                        ContentSyncImport::addLogtMessage( $message );
+                    }
+                }
+
                 $tag->store();
 
                 foreach( $pathTagData['translations'] as $language => $translation ) {
