@@ -21,7 +21,6 @@ class ContentSyncImportHandlerXrowProduct extends ContentSyncImportHandlereRPBas
         'description',
         'video',
         'hide_product',
-        'tags',
         'brand',
         'display_in_websites',
         'parent_category_identifiers',
@@ -130,6 +129,18 @@ class ContentSyncImportHandlerXrowProduct extends ContentSyncImportHandlereRPBas
                 $return['colour_image_map_info'] = self::processColourImageMap( $attribute );
                 continue;
             }
+
+            // Tags
+            if( $identifier === 'tags' ) {
+                $return[$identifier] = $this->processTagsAttribute( $attribute );
+                continue;
+            }
+
+            // Search tags
+            if( $identifier === 'search_tags' ) {
+                $return[$identifier] = $this->processTagsAttribute( $attribute );
+                continue;
+            }
         }
 
         return $return;
@@ -149,6 +160,9 @@ class ContentSyncImportHandlerXrowProduct extends ContentSyncImportHandlereRPBas
                     $colourImageMap, $objectData['attributes']['product_id'], $objectData['attributes']['version']
                 );
             }
+
+            self::handleTags( $objectData, 'tags', $result['object_id'], $result['object_version'] );
+            self::handleTags( $objectData, 'search_tags', $result['object_id'], $result['object_version'] );
         }
 
         return $result;

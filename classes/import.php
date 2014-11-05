@@ -143,7 +143,7 @@ class ContentSyncImport {
     }
 
     private function processAttributes() {
-        $xml        = simplexml_import_dom( $this->DOMDocument );
+        $xml        = simplexml_load_string( $this->DOMDocument->saveXML(), null, LIBXML_NOCDATA );
         $attributes = $xml->xpath( '/object/attributes/attribute' );
 
         $existingVerion                 = $this->getExisitingObjectVersion();

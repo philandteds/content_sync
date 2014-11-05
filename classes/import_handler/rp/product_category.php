@@ -16,7 +16,6 @@ class ContentSyncImportHandlerProductCategory extends ContentSyncImportHandlereR
         'description',
         'category_message',
         'identifier',
-        'tags',
         'xrow_prod_desc',
         'show_in_main_menu',
         'show_in_products_menu',
@@ -51,18 +50,42 @@ class ContentSyncImportHandlerProductCategory extends ContentSyncImportHandlereR
         $return = $this->processSimpleAttributes( $attributes );
         $object = $this->fetchObject( $uniqueID );
 
-        // Image attriubte
         foreach( $attributes as $attribute ) {
             $identifier = (string) $attribute['identifier'];
+
+            // Image attriubte
             if( $identifier === 'image' ) {
                 $return[$identifier] = self::processRealtedImagesAttribute(
                         $attribute, self::getImagesContainerNode(), $object
                 );
-                break;
+                continue;
+            }
+
+            // Tags
+            if( $identifier === 'tags' ) {
+                $return[$identifier] = $this->processTagsAttribute( $attribute );
+                continue;
+            }
+
+            // Search tags
+            if( $identifier === 'search_tags' ) {
+                $return[$identifier] = $this->processTagsAttribute( $attribute );
+                continue;
             }
         }
 
         return $return;
+    }
+
+    public function import( array $objectData, eZContentObjectVersion $existingVersion = null ) {
+        $result = parent::import( $objectData, $existingVersion );
+
+        if( $result['status'] !== ContentSyncLogImport::STATUS_SKIPPED ) {
+            self::handleTags( $objectData, 'tags', $result['object_id'], $result['object_version'] );
+            self::handleTags( $objectData, 'search_tags', $result['object_id'], $result['object_version'] );
+        }
+
+        return $result;
     }
 
 }
