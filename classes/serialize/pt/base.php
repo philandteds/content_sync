@@ -101,16 +101,11 @@ class ContentSyncSerializePTBase extends ContentSyncSerializeBase {
         $tags = $attribute->attribute( 'content' )->attribute( 'tags' );
 
         foreach( $tags as $k => $tag ) {
-            $tagsPath = array( $tag );
-            while( $tag->attribute( 'parent_id' ) > 1 ) {
-                $tag = $tag->attribute( 'parent' );
-
-                // If there is at least one invalid parent, we are skipping this tag
-                if( $tag instanceof eZTagsObject === false ) {
-                    $tagsPath = array();
-                    break;
-                }
+            $tagsPath = array();
+            while( $tag instanceof eZTagsObject ) {
                 $tagsPath[] = $tag;
+
+                $tag = $tag->attribute( 'parent' );
             }
 
             if( count( $tagsPath ) === 0 ) {
