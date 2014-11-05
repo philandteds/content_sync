@@ -140,6 +140,9 @@ class ContentSyncSerializePTBase extends ContentSyncSerializeBase {
                 $tagKeywordElement->appendChild( $doc->createCDATASection( $tag->Keyword ) );
                 $tagElement->appendChild( $tagKeywordElement );
 
+                $mainTag = $tag->attribute( 'main_tag' );
+                $tagElement->setAttribute( 'main_tag_remote_id', $mainTag instanceof eZTagsObject ? $mainTag->attribute( 'remote_id' ) : 0  );
+
                 $translations           = $tag->attribute( 'translations' );
                 $tagTranslationsElement = $doc->createElement( 'translations' );
                 foreach( $translations as $translation ) {
