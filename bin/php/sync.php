@@ -100,7 +100,6 @@ foreach( $clasIdentifiers as $clasIdentifier ) {
             )
     );
 
-    $nodes = array( eZContentObjectTreeNode::fetch( 12627, false, false ) );
     foreach( $nodes as $node ) {
         if( $i % 10 === 0 ) {
             $progress = number_format( $i / $totalCount * 100, 2 );
