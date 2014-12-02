@@ -538,7 +538,7 @@ class ContentSyncImportHandlereRPBase extends ContentSyncImportHandlerBase {
                 $tag->setAttribute( 'language_mask', $mask );
                 $tag->setAttribute( 'modified', time() );
 
-                if( $pathTagData['main_tag_remote_id'] !== 0 ) {
+                if( (int) $pathTagData['main_tag_remote_id'] !== 0 ) {
                     $parentTag = eZTagsObject::fetchByRemoteID( $pathTagData['main_tag_remote_id'] );
                     if( $parentTag instanceof eZTagsObject ) {
                         $tag->setAttribute( 'main_tag_id', $parentTag->attribute( 'id' ) );
