@@ -127,7 +127,7 @@ class ContentSyncType extends eZWorkflowEventType {
 
         $curl = curl_init();
         curl_setopt( $curl, CURLOPT_URL, $event->attribute( 'url' ) );
-        curl_setopt( $curl, CURLOPT_TIMEOUT, 30 );
+        curl_setopt( $curl, CURLOPT_TIMEOUT, 60 );
         curl_setopt( $curl, CURLOPT_RETURNTRANSFER, true );
         curl_setopt( $curl, CURLOPT_POST, true );
         curl_setopt( $curl, CURLOPT_POSTFIELDS, $data );
