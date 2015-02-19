@@ -64,6 +64,8 @@ class ContentSyncType extends eZWorkflowEventType {
         if( $syncHander instanceof ContentSyncSerializeBase ) {
             return $syncHander->getObjectsToSync( $object, $version, $language );
         }
+        
+        return array();
     }
 
     public static function requestContentSync( eZContentObject $object, $version, $event ) {
