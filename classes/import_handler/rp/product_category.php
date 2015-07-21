@@ -22,6 +22,17 @@ class ContentSyncImportHandlerProductCategory extends ContentSyncImportHandlereR
         'parent_category_identifier'
     );
 
+    public function __construct() {
+        $ini = eZINI::instance( 'content_sync.ini' );
+
+        if( $ini->hasVariable( 'Nodes', 'ProductCategoryRoot' ) ) {
+            self::$rootNodeURLPath = $ini->variable( 'Nodes', 'ProductCategoryRoot' );
+        }
+        if( $ini->hasVariable( 'Nodes', 'ProductCategoryImageContainer' ) ) {
+            self::$imageContainerURLPath = $ini->variable( 'Nodes', 'ProductCategoryImageContainer' );
+        }
+    }
+
     public static function fetchNode( $uniqueID ) {
         $class       = ContentSyncSerializeProductCategory::$classIdentifier;
         $fetchParams = array(

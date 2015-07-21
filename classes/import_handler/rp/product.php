@@ -29,6 +29,20 @@ class ContentSyncImportHandlerXrowProduct extends ContentSyncImportHandlereRPBas
     protected $filesToRemoveAfterPublish          = array();
     protected $relatedImageHashes                 = array();
 
+    public function __construct() {
+        $ini = eZINI::instance( 'content_sync.ini' );
+
+        if( $ini->hasVariable( 'Nodes', 'ProductRoot' ) ) {
+            self::$rootNodeURLPath = $ini->variable( 'Nodes', 'ProductRoot' );
+        }
+        if( $ini->hasVariable( 'Nodes', 'ProductImageContainer' ) ) {
+            self::$imageContainerURLPath = $ini->variable( 'Nodes', 'ProductImageContainer' );
+        }
+        if( $ini->hasVariable( 'Nodes', 'ProductHidden' ) ) {
+            self::$removedContainerNodeURLPath = $ini->variable( 'Nodes', 'ProductHidden' );
+        }
+    }
+
     public static function fetchNode( $uniqueID ) {
         if( strpos( $uniqueID, 'NAME#' ) !== false ) {
             return self::fetchNodeByName( $uniqueID );
