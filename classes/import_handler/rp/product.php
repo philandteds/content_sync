@@ -8,9 +8,9 @@
  * */
 class ContentSyncImportHandlerXrowProduct extends ContentSyncImportHandlereRPBase {
 
-    protected static $rootNodeURLPath             = 'restricted_products';
+    protected static $rootNodeURLPath             = 'pre_launch_products';
     protected static $imageContainerURLPath       = 'files/images/products';
-    protected static $removedContainerNodeURLPath = 'restricted_products/hidden_products';
+    protected static $removedContainerNodeURLPath = 'legacy_webshop_only_products';
     protected static $simpleAttributes            = array(
         'name',
         'product_id',
