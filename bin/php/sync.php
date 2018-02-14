@@ -25,14 +25,15 @@ $scriptSettings['use-extensions'] = true;
 
 $script  = eZScript::instance( $scriptSettings );
 $script->startup();
-$script->initialize();
 $options = $script->getOptions(
-    '[class_identifiers:][offset:][limit:]', '', array(
-    'class_identifiers' => 'Content class identifiers, seprated by comma',
-    'offset'            => 'Fetch objects offset',
-    'limit'             => 'fetch objects limit'
+    '[class_identifiers:][offset:][limit:][use_main_language_only]', '', array(
+    'class_identifiers'      => 'Content class identifiers, seprated by comma',
+    'offset'                 => 'Fetch objects offset',
+    'limit'                  => 'Fetch objects limit',
+    'use_main_language_only' => 'Sync only main language translations'
     )
 );
+$script->initialize();
 
 if( strlen( $options['class_identifiers'] ) === 0 ) {
     $cli->error( 'Please specify some content classes' );
@@ -57,6 +58,8 @@ if( ( $user instanceof eZUser ) === false ) {
     $script->shutdown( 1 );
 }
 eZUser::setCurrentlyLoggedInUser( $user, $userID );
+
+$mainLanguage = eZINI::instance( 'site.ini' )->variable( 'RegionalSettings', 'Locale' );
 
 $outputSeparator = str_repeat( '-', 80 );
 $startTime       = microtime( true );
@@ -116,6 +119,10 @@ foreach( $clasIdentifiers as $clasIdentifier ) {
         $languages     = $object->attribute( 'current' )->translations( false );
         $versionNumber = $object->attribute( 'current_version' );
         foreach( $languages as $language ) {
+            if( $options['use_main_language_only'] && $mainLanguage !== $language ) {
+                continue;
+            }
+
             $objectsToSync = ContentSyncType::getObjectsToSync( $object, $versionNumber, $language );
             foreach( $objectsToSync as $info ) {
                 ContentSyncType::requestContentSync( $info['object'], $info['version'], $events[0] );
